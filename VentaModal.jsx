@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { supabase } from '../supabase'
+import { supabase } from './supabase'
 import { Modal, Campo, Error, useApp } from './ui'
-import { bs, hoyISO } from '../lib'
+import { bs, hoyISO } from './lib'
 
 const CAUSAS = ['Voluntaria', 'Incumplimiento', 'Competencia', 'Causa Disatel / excepción', 'Otra']
 

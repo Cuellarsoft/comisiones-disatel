@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { supabase } from '../supabase'
-import { Cabecera, Cargando, useApp } from '../components/ui'
-import VentaModal from '../components/VentaModal'
-import { bs, fdate, estadoVenta, mesLabel, descargarCSV, diasDesde, instalada } from '../lib'
+import { supabase } from './supabase'
+import { Cabecera, Cargando, useApp } from './ui'
+import VentaModal from './VentaModal'
+import { bs, fdate, estadoVenta, mesLabel, descargarCSV, diasDesde, instalada } from './lib'
 
 const FILTROS = {
   todas: 'Todas',

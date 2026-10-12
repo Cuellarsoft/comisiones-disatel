@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { supabase } from '../supabase'
-import { Cabecera, Campo, Error, useApp } from '../components/ui'
+import { supabase } from './supabase'
+import { Cabecera, Campo, Error, useApp } from './ui'
 
 export default function Parametros() {
   const { params, cargarParams } = useApp()

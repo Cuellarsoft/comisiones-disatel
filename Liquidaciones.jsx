@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../supabase'
-import { Cabecera, Cargando, Campo, Error, Modal, useApp } from '../components/ui'
-import LiquidacionDoc from '../components/LiquidacionDoc'
-import { bs, fdate, hoyISO, mesActual, mesLabel, ultimosMeses } from '../lib'
+import { supabase } from './supabase'
+import { Cabecera, Cargando, Campo, Error, Modal, useApp } from './ui'
+import LiquidacionDoc from './LiquidacionDoc'
+import { bs, fdate, hoyISO, mesActual, mesLabel, ultimosMeses } from './lib'
 
 function mesAnterior() {
   const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1)

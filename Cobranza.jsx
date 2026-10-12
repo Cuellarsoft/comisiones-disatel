@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../supabase'
-import { Cabecera, Cargando, Error, useApp } from '../components/ui'
-import { bs, fdate, diasDesde, hoyISO, instalada } from '../lib'
+import { supabase } from './supabase'
+import { Cabecera, Cargando, Error, useApp } from './ui'
+import { bs, fdate, diasDesde, hoyISO, instalada } from './lib'
 
 export default function Cobranza() {
   const { params } = useApp()

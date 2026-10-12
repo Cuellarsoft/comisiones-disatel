@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../supabase'
-import { Cabecera, Kpi, Cargando, BonoBarra, useApp } from '../components/ui'
-import { ResumenLiq } from '../components/LiquidacionDoc'
-import VentaModal from '../components/VentaModal'
-import { bs, bs0, bonoInfo, diasDesde, fdate, mesActual, mesLabel, instalada } from '../lib'
+import { supabase } from './supabase'
+import { Cabecera, Kpi, Cargando, BonoBarra, useApp } from './ui'
+import { ResumenLiq } from './LiquidacionDoc'
+import VentaModal from './VentaModal'
+import { bs, bs0, bonoInfo, diasDesde, fdate, mesActual, mesLabel, instalada } from './lib'
 
 export default function MiResumen() {
   const { perfil, params, ir } = useApp()

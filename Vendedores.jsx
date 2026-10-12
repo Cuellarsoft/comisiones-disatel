@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { supabase, adminUsuarios } from '../supabase'
-import { Cabecera, Cargando, Campo, Error, Modal, useApp } from '../components/ui'
-import { bs, fdate } from '../lib'
+import { supabase, adminUsuarios } from './supabase'
+import { Cabecera, Cargando, Campo, Error, Modal, useApp } from './ui'
+import { bs, fdate } from './lib'
 
 const genPass = () => 'Disatel-' + Math.random().toString(36).slice(2, 7) + Math.floor(10 + Math.random() * 89)
 

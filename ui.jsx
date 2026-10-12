@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect } from 'react'
-import { bonoInfo, bs0 } from '../lib'
+import { bonoInfo, bs0 } from './lib'
 
 export const Ctx = createContext(null)
 export const useApp = () => useContext(Ctx)

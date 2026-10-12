@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../supabase'
-import { Cabecera, Cargando, Kpi, useApp } from '../components/ui'
-import { bs, fdate, mesLabel, MOTIVOS, pct } from '../lib'
+import { supabase } from './supabase'
+import { Cabecera, Cargando, Kpi, useApp } from './ui'
+import { bs, fdate, mesLabel, MOTIVOS, pct } from './lib'
 
 export default function Clawbacks() {
   const { perfil, params } = useApp()

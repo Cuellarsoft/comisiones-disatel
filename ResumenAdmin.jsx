@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { supabase } from '../supabase'
-import { Cabecera, Kpi, Cargando, MiniBarra, useApp } from '../components/ui'
-import { bs, bs0, bonoInfo, diasDesde, mesActual, mesLabel, mesCorto, ultimosMeses, instalada } from '../lib'
+import { supabase } from './supabase'
+import { Cabecera, Kpi, Cargando, MiniBarra, useApp } from './ui'
+import { bs, bs0, bonoInfo, diasDesde, mesActual, mesLabel, mesCorto, ultimosMeses, instalada } from './lib'
 
 export default function ResumenAdmin() {
   const { params, ir } = useApp()

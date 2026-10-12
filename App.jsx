@@ -1,16 +1,17 @@
+import logo from './logo.png'
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase'
-import { Ctx, Cargando } from './components/ui'
-import Login from './pages/Login'
-import ResumenAdmin from './pages/ResumenAdmin'
-import MiResumen from './pages/MiResumen'
-import Ventas from './pages/Ventas'
-import Cobranza from './pages/Cobranza'
-import Clawbacks from './pages/Clawbacks'
-import Liquidaciones from './pages/Liquidaciones'
-import Vendedores from './pages/Vendedores'
-import Parametros from './pages/Parametros'
-import MiCuenta from './pages/MiCuenta'
+import { Ctx, Cargando } from './ui'
+import Login from './Login'
+import ResumenAdmin from './ResumenAdmin'
+import MiResumen from './MiResumen'
+import Ventas from './Ventas'
+import Cobranza from './Cobranza'
+import Clawbacks from './Clawbacks'
+import Liquidaciones from './Liquidaciones'
+import Vendedores from './Vendedores'
+import Parametros from './Parametros'
+import MiCuenta from './MiCuenta'
 
 const MENU_ADMIN = [
   ['resumen', 'Resumen', ResumenAdmin],
@@ -69,7 +70,7 @@ export default function App() {
   if (!perfil || !perfil.activo) {
     return (
       <div className="login"><div className="caja">
-        <img src="/logo.png" alt="Disatel" />
+        <img src={logo} alt="Disatel" />
         <div className="card" style={{ textAlign: 'center' }}>
           <p>Este usuario no tiene acceso a la plataforma de comisiones.</p>
           <button className="btn" onClick={salir}>Salir</button>
@@ -87,7 +88,7 @@ export default function App() {
       <div className="app">
         <aside className="side no-print">
           <div className="marca">
-            <img src="/logo.png" alt="Disatel" />
+            <img src={logo} alt="Disatel" />
             <small>Comisiones</small>
           </div>
           <nav>

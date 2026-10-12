@@ -1,6 +1,7 @@
+import logo from './logo.png'
 import { useEffect, useState } from 'react'
-import { supabase } from '../supabase'
-import { bs, fdate, mesLabel, MOTIVOS, pct } from '../lib'
+import { supabase } from './supabase'
+import { bs, fdate, mesLabel, MOTIVOS, pct } from './lib'
 import { Cargando } from './ui'
 
 // Resumen numérico (se usa en vista previa y en el documento)
@@ -39,7 +40,7 @@ export default function LiquidacionDoc({ liq, vendedor }) {
   return (
     <div className="doc-liq imprimible">
       <div className="doc-cab">
-        <img src="/logo.png" alt="Disatel" />
+        <img src={logo} alt="Disatel" />
         <div className="der">
           <h3>Liquidación de comisiones</h3>
           <div>{vendedor} · {mesLabel(liq.periodo)}</div>

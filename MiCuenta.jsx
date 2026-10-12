@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { supabase } from '../supabase'
-import { Cabecera, Campo, Error, useApp } from '../components/ui'
-import { bs } from '../lib'
+import { supabase } from './supabase'
+import { Cabecera, Campo, Error, useApp } from './ui'
+import { bs } from './lib'
 
 export default function MiCuenta() {
   const { perfil } = useApp()

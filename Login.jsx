@@ -1,6 +1,7 @@
+import logo from './logo.png'
 import { useState } from 'react'
-import { supabase } from '../supabase'
-import { Campo, Error } from '../components/ui'
+import { supabase } from './supabase'
+import { Campo, Error } from './ui'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -19,7 +20,7 @@ export default function Login() {
   return (
     <div className="login">
       <div className="caja">
-        <img src="/logo.png" alt="Disatel" />
+        <img src={logo} alt="Disatel" />
         <div className="tit">Plataforma de comisiones</div>
         <form className="card" onSubmit={entrar}>
           <Error msg={err} />
