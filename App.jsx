@@ -12,6 +12,7 @@ import Liquidaciones from './Liquidaciones'
 import Vendedores from './Vendedores'
 import Parametros from './Parametros'
 import MiCuenta from './MiCuenta'
+import Historial from './Historial'
 
 const MENU_ADMIN = [
   ['resumen', 'Resumen', ResumenAdmin],
@@ -19,6 +20,7 @@ const MENU_ADMIN = [
   ['cobranza', 'Cobranza', Cobranza],
   ['clawbacks', 'Clawbacks', Clawbacks],
   ['liquidaciones', 'Liquidaciones', Liquidaciones],
+  ['historial', 'Historial', Historial],
   ['sep', 'Configuración'],
   ['vendedores', 'Vendedores', Vendedores],
   ['parametros', 'Parámetros', Parametros],

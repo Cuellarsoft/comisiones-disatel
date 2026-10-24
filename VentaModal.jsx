@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import { Modal, Campo, Error, useApp } from './ui'
 import { bs, hoyISO } from './lib'
+import { FilaHistorial } from './Historial'
 
 const CAUSAS = ['Voluntaria', 'Incumplimiento', 'Competencia', 'Causa Disatel / excepción', 'Otra']
 
@@ -28,6 +29,11 @@ export default function VentaModal({ venta, vendedores = [], onClose, onSaved })
     causa_baja: venta?.causa_baja || '',
     comision: venta?.comision ?? '',
   }))
+  const [hist, setHist] = useState([])
+  useEffect(() => {
+    if (venta?.id) supabase.from('historial').select('*').eq('tabla', 'ventas').eq('registro_id', venta.id)
+      .order('created_at', { ascending: false }).then(({ data }) => setHist(data || []))
+  }, [venta?.id])
   const [err, setErr] = useState('')
   const [guardando, setGuardando] = useState(false)
   const set = (k) => (e) => setF((x) => ({ ...x, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
@@ -142,6 +148,14 @@ export default function VentaModal({ venta, vendedores = [], onClose, onSaved })
           </> : <div />}
         </>}
       </form>
+      {hist.length > 0 && (
+        <div style={{ marginTop: 22 }}>
+          <div style={{ fontSize: 12, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--rojo)', fontWeight: 700, marginBottom: 8 }}>Historial de esta venta</div>
+          <div className="tabla-wrap" style={{ border: '1px solid var(--linea)', borderRadius: 8 }}><table style={{ fontSize: 12.5 }}>
+            <tbody>{hist.map((h) => <FilaHistorial key={h.id} h={h} conDetalle={false} />)}</tbody>
+          </table></div>
+        </div>
+      )}
     </Modal>
   )
 }
