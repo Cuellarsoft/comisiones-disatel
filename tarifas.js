@@ -1,46 +1,48 @@
 // Tarifario de cotizaciones DISATEL.
-// Para cambiar precios, descuentos o condiciones, editar solo este archivo.
+// Los valores vigentes se editan en Cotizaciones → Configuración (se guardan en la base).
+// CONFIG_BASE es el punto de partida y el respaldo si la base no tiene configuración.
 
-export const CONTRATO_MESES = 12
-export const VALIDEZ_DIAS = 15
-// Con más de esta cantidad de unidades el vendedor puede bonificar los accesorios
-export const UMBRAL_BONIFICAR = 20
-
-export const PLANES = {
-  personal: {
-    nombre: 'Personal',
-    equipo: 'venta', // el equipo se vende al cliente
-    tramos: [
-      { hasta: 4, nombre: '1 a 4 vehículos', equipo: 390, mes: 85, roaming: 110, descSemestral: 0.05, descAnual: 0.1 },
-      { hasta: Infinity, nombre: '5 o más vehículos', equipo: 390, mes: 65, roaming: 100, descSemestral: 0.05, descAnual: 0.1 },
-    ],
-    condiciones: [
-      'El equipo GPS se vende al cliente y queda de su propiedad.',
-      'El equipo se paga al momento de la instalación.',
-      'El servicio de monitoreo se paga por mes adelantado.',
-    ],
+export const CONFIG_BASE = {
+  validezDias: 15,
+  contratoMeses: 12,
+  umbralBonificar: 20, // con más de esta cantidad de unidades se pueden bonificar los accesorios
+  planes: {
+    personal: {
+      nombre: 'Personal',
+      equipo: 'venta', // el equipo se vende al cliente
+      limite: 4, // primer tramo: de 1 hasta este número de vehículos
+      tramos: [
+        { equipo: 390, mes: 85, roaming: 110, descSemestral: 0.05, descAnual: 0.1 },
+        { equipo: 390, mes: 65, roaming: 100, descSemestral: 0.05, descAnual: 0.1 },
+      ],
+      condiciones: [
+        'El equipo GPS se vende al cliente y queda de su propiedad.',
+        'El equipo se paga al momento de la instalación.',
+        'El servicio de monitoreo se paga por mes adelantado.',
+      ],
+    },
+    empresa: {
+      nombre: 'Empresa (SRL o SA)',
+      equipo: 'comodato', // el equipo se entrega en comodato
+      limite: 30,
+      tramos: [
+        { equipo: 0, mes: 96, roaming: 110, descSemestral: 0.05, descAnual: 0.1 },
+        { equipo: 0, mes: 85, roaming: 100, descSemestral: 0.05, descAnual: 0.1 },
+      ],
+      condiciones: [
+        'El equipo GPS se entrega en comodato, sin costo de equipo.',
+        'El servicio de monitoreo se paga a mes vencido.',
+      ],
+    },
   },
-  empresa: {
-    nombre: 'Empresa (SRL o SA)',
-    equipo: 'comodato', // el equipo se entrega en comodato
-    tramos: [
-      { hasta: 30, nombre: '1 a 30 unidades', equipo: 0, mes: 96, roaming: 110, descSemestral: 0.05, descAnual: 0.1 },
-      { hasta: Infinity, nombre: '31 unidades o más', equipo: 0, mes: 85, roaming: 100, descSemestral: 0.05, descAnual: 0.1 },
-    ],
-    condiciones: [
-      'El equipo GPS se entrega en comodato, sin costo de equipo.',
-      'El servicio de monitoreo se paga a mes vencido.',
-    ],
-  },
+  accesorios: [
+    { id: 'relay', nombre: 'Corte de motor (relay)', precio: 90 },
+    { id: 'temperatura', nombre: 'Sensor de temperatura', precio: 250 },
+    { id: 'buzzer', nombre: 'Buzzer', precio: 50 },
+    { id: 'llave', nombre: 'Llave magnética', precio: 50 },
+    { id: 'puerta', nombre: 'Sensor de puerta', precio: 200 },
+  ],
 }
-
-export const ACCESORIOS = [
-  { id: 'relay', nombre: 'Corte de motor (relay)', precio: 90 },
-  { id: 'temperatura', nombre: 'Sensor de temperatura', precio: 250 },
-  { id: 'buzzer', nombre: 'Buzzer', precio: 50 },
-  { id: 'llave', nombre: 'Llave magnética', precio: 50 },
-  { id: 'puerta', nombre: 'Sensor de puerta', precio: 200 },
-]
 
 export const INCLUYE = [
   'Rastreo GPS en tiempo real en la plataforma LOC-AID',
@@ -50,15 +52,52 @@ export const INCLUYE = [
   'Soporte técnico local en Santa Cruz',
 ]
 
+const num = (v, d) => (v === '' || v == null || isNaN(Number(v)) ? d : Number(v))
+
+// Completa una configuración guardada con los valores base (por si le falta algún dato)
+export function normalizarConfig(c) {
+  const b = CONFIG_BASE
+  if (!c || typeof c !== 'object') return structuredClone(b)
+  const plan = (k) => {
+    const pb = b.planes[k], pc = c.planes?.[k] || {}
+    return {
+      ...pb,
+      limite: Math.max(1, Math.floor(num(pc.limite, pb.limite))),
+      tramos: pb.tramos.map((tb, i) => {
+        const tc = pc.tramos?.[i] || {}
+        return {
+          equipo: num(tc.equipo, tb.equipo), mes: num(tc.mes, tb.mes), roaming: num(tc.roaming, tb.roaming),
+          descSemestral: num(tc.descSemestral, tb.descSemestral), descAnual: num(tc.descAnual, tb.descAnual),
+        }
+      }),
+      condiciones: Array.isArray(pc.condiciones) ? pc.condiciones.filter((x) => String(x).trim()) : pb.condiciones,
+    }
+  }
+  return {
+    validezDias: Math.max(1, Math.floor(num(c.validezDias, b.validezDias))),
+    contratoMeses: Math.max(1, Math.floor(num(c.contratoMeses, b.contratoMeses))),
+    umbralBonificar: Math.max(0, Math.floor(num(c.umbralBonificar, b.umbralBonificar))),
+    planes: { personal: plan('personal'), empresa: plan('empresa') },
+    accesorios: Array.isArray(c.accesorios)
+      ? c.accesorios.filter((a) => a && String(a.nombre || '').trim()).map((a) => ({ id: String(a.id), nombre: String(a.nombre).trim(), precio: num(a.precio, 0) }))
+      : b.accesorios,
+  }
+}
+
+// Nombre legible de cada tramo según el límite configurado
+export const nombreTramo = (plan, i) => (i === 0 ? `1 a ${plan.limite} vehículos` : `${plan.limite + 1} o más vehículos`)
+
 const r2 = (n) => Math.round(n * 100) / 100
 
-// Calcula la cotización completa a partir de lo que carga el vendedor
-export function cotizar({ tipo, unidades, conRoaming, accesorios, bonificar }) {
-  const plan = PLANES[tipo]
+// Calcula la cotización completa a partir de lo que carga el vendedor y la configuración vigente
+export function cotizar({ tipo, unidades, conRoaming, accesorios, bonificar }, config = CONFIG_BASE) {
+  const cfg = config.planes?.personal?.limite ? config : normalizarConfig(config)
+  const plan = cfg.planes[tipo] || cfg.planes.personal
   const n = Math.max(0, Math.floor(Number(unidades) || 0))
   const r = Math.min(n, Math.max(0, Math.floor(Number(conRoaming) || 0)))
-  const tramo = plan.tramos.find((t) => n <= t.hasta)
-  const puedeBonificar = n > UMBRAL_BONIFICAR
+  const iTramo = n <= plan.limite ? 0 : 1
+  const tramo = { ...plan.tramos[iTramo], nombre: nombreTramo(plan, iTramo) }
+  const puedeBonificar = n > cfg.umbralBonificar
   const bonif = puedeBonificar && !!bonificar
 
   // Inversión inicial (pago único)
@@ -70,7 +109,7 @@ export function cotizar({ tipo, unidades, conRoaming, accesorios, bonificar }) {
     total: r2(n * tramo.equipo),
     nota: plan.equipo === 'comodato' ? 'Sin costo' : '',
   })
-  for (const a of ACCESORIOS) {
+  for (const a of cfg.accesorios) {
     const c = Math.max(0, Math.floor(Number(accesorios?.[a.id]) || 0))
     if (!c) continue
     inicial.push({ concepto: a.nombre, cant: c, unit: a.precio, total: bonif ? 0 : r2(c * a.precio), nota: bonif ? 'Bonificado' : '' })
@@ -93,11 +132,11 @@ export function cotizar({ tipo, unidades, conRoaming, accesorios, bonificar }) {
   })
 
   return {
-    plan, tramo, unidades: n, conRoaming: r, puedeBonificar, bonificado: bonif,
+    plan, tramo, unidades: n, conRoaming: r, puedeBonificar, bonificado: bonif, umbralBonificar: cfg.umbralBonificar,
     inicial, totalInicial, mensual, totalMensual, formasPago,
     condiciones: [
       ...plan.condiciones,
-      `Contrato mínimo de ${CONTRATO_MESES} meses.`,
+      `Contrato mínimo de ${cfg.contratoMeses} meses.`,
       'Precios expresados en bolivianos (Bs).',
     ],
   }

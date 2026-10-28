@@ -83,3 +83,17 @@ end $$;
 
 revoke execute on function public.vender_cotizacion(bigint, text, boolean, date, jsonb) from anon, public;
 grant execute on function public.vender_cotizacion(bigint, text, boolean, date, jsonb) to authenticated;
+
+-- Configuración editable de precios y condiciones (una sola fila)
+create table if not exists public.config_cotizaciones (
+  id int primary key default 1 check (id = 1),
+  datos jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table public.config_cotizaciones enable row level security;
+drop policy if exists cfgc_sel on public.config_cotizaciones;
+drop policy if exists cfgc_ins on public.config_cotizaciones;
+drop policy if exists cfgc_upd on public.config_cotizaciones;
+create policy cfgc_sel on public.config_cotizaciones for select to authenticated using (true);
+create policy cfgc_ins on public.config_cotizaciones for insert to authenticated with check (public.is_admin());
+create policy cfgc_upd on public.config_cotizaciones for update to authenticated using (public.is_admin()) with check (public.is_admin());

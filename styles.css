@@ -254,6 +254,20 @@ textarea { resize: vertical; }
 @media (prefers-reduced-motion: reduce) { .opcion { transition: none; } .opcion:hover { transform: none; } }
 @media (max-width: 760px) { .inicio-opciones { grid-template-columns: minmax(0, 1fr); } .opcion { padding: 22px 20px; } }
 
+/* ---------- Configuración de cotizaciones */
+.cfg-planes { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 18px; }
+.cfg-planes .card .cb { display: grid; gap: 16px; }
+.cfg-limite { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--grafito); }
+.cfg-limite input { width: 72px !important; text-align: right; }
+.cfg-tabla td { padding: 8px 12px; }
+.cfg-celda { display: inline-flex; align-items: center; gap: 6px; }
+.cfg-celda input { width: 92px !important; text-align: right; }
+.cfg-celda small { color: var(--gris); font-size: 11.5px; min-width: 16px; text-align: left; }
+.cfg-tabla td input[type=text] { min-width: 180px; }
+.sub-gris { color: var(--gris); }
+.cfg-pie { display: flex; justify-content: flex-end; margin-top: 18px; }
+@media (max-width: 1100px) { .cfg-planes { grid-template-columns: minmax(0, 1fr); } }
+
 /* ---------- Responsive */
 @media (max-width: 1100px) {
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }

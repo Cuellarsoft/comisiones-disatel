@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Cabecera, Campo, Error, useApp } from './ui'
-import { ACCESORIOS, PLANES, UMBRAL_BONIFICAR, VALIDEZ_DIAS, cotizar } from './tarifas'
+import { cotizar, normalizarConfig } from './tarifas'
 import { bsPdf, generarPdf } from './cotizacionPdf'
 import { fdate, hoyISO } from './lib'
 import { supabase } from './supabase'
@@ -27,10 +27,16 @@ const esMovil = () => window.matchMedia?.('(pointer: coarse)').matches && !!navi
 const VACIO = { cliente: '', atencion: '', telefono: '', email: '', tipo: 'personal', unidades: 1, conRoaming: 0, accesorios: {}, bonificar: false, notas: '', presentacion: true }
 
 export default function Cotizaciones() {
-  const { perfil, cotAbrir, setCotAbrir } = useApp()
+  const { perfil, cotAbrir, setCotAbrir, configCot } = useApp()
   const abierta = cotAbrir?.id ? cotAbrir : null
   const soloLectura = abierta?.estado === 'Vendida'
-  const [f, setF] = useState(() => (abierta ? { ...VACIO, ...abierta.datos } : VACIO))
+  // Una cotización vendida conserva los precios con que se vendió; las demás usan la configuración vigente
+  const cfg = useMemo(() => (soloLectura && abierta?.datos?.config ? normalizarConfig(abierta.datos.config) : configCot), [soloLectura, abierta, configCot])
+  const [f, setF] = useState(() => {
+    if (!abierta) return VACIO
+    const { config, ...form } = abierta.datos || {} // eslint-disable-line no-unused-vars
+    return { ...VACIO, ...form }
+  })
   const [numero, setNumero] = useState(() => abierta?.numero || nuevoNumero(perfil.nombre))
   const [fecha, setFecha] = useState(() => abierta?.fecha || hoyISO())
   const [miTel, setMiTel] = useState(() => leer('cot_mi_telefono'))
@@ -43,18 +49,18 @@ export default function Cotizaciones() {
   const timer = useRef(null)
   const ultimo = useRef({ clave: '', bytes: null })
 
-  const cot = useMemo(() => cotizar(f), [f])
+  const cot = useMemo(() => cotizar(f, cfg), [f, cfg])
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
   const setAcc = (id, v) => setF((s) => ({ ...s, accesorios: { ...s.accesorios, [id]: v } }))
 
   const datos = () => ({
-    cot, numero, fecha, validoHasta: masDias(fecha, VALIDEZ_DIAS),
+    cot, numero, fecha, validoHasta: masDias(fecha, cfg.validezDias),
     cliente: f.cliente.trim() || '[Nombre del cliente]', atencion: f.atencion.trim(), notas: f.notas, presentacion: f.presentacion,
     vendedor: { nombre: perfil.nombre, telefono: miTel.trim(), email: perfil.email },
   })
   const archivo = () => `${f.presentacion ? 'Propuesta' : 'Cotizacion'} DISATEL - ${(f.cliente.trim() || 'cliente').replace(/[\\/:*?"<>|]/g, '')}.pdf`
 
-  const claveActual = JSON.stringify([f, miTel, numero, fecha])
+  const claveActual = JSON.stringify([f, miTel, numero, fecha, cfg])
 
   // Vista previa del PDF (se regenera al cambiar los datos)
   useEffect(() => {
@@ -68,7 +74,7 @@ export default function Cotizaciones() {
       } catch (e) { setErr('No se pudo generar la vista previa: ' + e.message) }
     }, 350)
     return () => clearTimeout(timer.current)
-  }, [f, miTel, numero, fecha]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [f, miTel, numero, fecha, cfg]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function validar() {
     if (!f.cliente.trim()) return 'Escribe el nombre del cliente o la empresa.'
@@ -82,7 +88,7 @@ export default function Cotizaciones() {
     const { error } = await supabase.from('cotizaciones').upsert({
       numero, vendedor_id: abierta?.vendedor_id || perfil.id, fecha,
       cliente: f.cliente.trim(), atencion: f.atencion.trim() || null, telefono: f.telefono.trim() || null, email: f.email.trim() || null,
-      tipo: f.tipo, unidades: cot.unidades, con_roaming: cot.conRoaming, datos: f,
+      tipo: f.tipo, unidades: cot.unidades, con_roaming: cot.conRoaming, datos: { ...f, config: cfg },
       total_inicial: cot.totalInicial, total_mensual: cot.totalMensual, enviada_por: canal,
     }, { onConflict: 'numero' })
     if (error) throw new globalThis.Error('No se pudo guardar la cotización: ' + error.message)
@@ -181,7 +187,7 @@ export default function Cotizaciones() {
               <h3>Servicio</h3>
               <Campo label="Tipo de cliente" full>
                 <div className="segmento">
-                  {Object.entries(PLANES).map(([k, p]) => (
+                  {Object.entries(cfg.planes).map(([k, p]) => (
                     <button key={k} type="button" className={f.tipo === k ? 'on' : ''} onClick={() => setF((s) => ({ ...s, tipo: k }))}>{p.nombre}</button>
                   ))}
                 </div>
@@ -199,7 +205,7 @@ export default function Cotizaciones() {
 
               <h3>Accesorios</h3>
               <div className="full acc">
-                {ACCESORIOS.map((a) => (
+                {cfg.accesorios.map((a) => (
                   <label key={a.id}>
                     <span>{a.nombre}<small>{bsPdf(a.precio)} c/u</small></span>
                     <input type="number" min="0" value={f.accesorios[a.id] || ''} placeholder="0" onChange={(e) => setAcc(a.id, e.target.value)} />
@@ -209,7 +215,7 @@ export default function Cotizaciones() {
               {cot.puedeBonificar && (
                 <label className="check full">
                   <input type="checkbox" checked={f.bonificar} onChange={set('bonificar')} />
-                  Bonificar accesorios (más de {UMBRAL_BONIFICAR} unidades)
+                  Bonificar accesorios (más de {cfg.umbralBonificar} unidades)
                 </label>
               )}
 

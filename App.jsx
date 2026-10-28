@@ -15,6 +15,8 @@ import MiCuenta from './MiCuenta'
 import Historial from './Historial'
 import Cotizaciones from './Cotizaciones'
 import ListaCotizaciones from './ListaCotizaciones'
+import ConfigCotizaciones from './ConfigCotizaciones'
+import { CONFIG_BASE, normalizarConfig } from './tarifas'
 
 const COMISIONES_ADMIN = [
   ['resumen', 'Resumen', ResumenAdmin],
@@ -38,6 +40,7 @@ const COMISIONES_VENDEDOR = [
 const COTIZACIONES = (admin) => [
   ['cot-nueva', 'Nueva cotización', Cotizaciones],
   ['cot-lista', admin ? 'Todas las cotizaciones' : 'Mis cotizaciones', ListaCotizaciones],
+  ...(admin ? [['sep', 'Configuración'], ['cot-config', 'Precios y condiciones', ConfigCotizaciones]] : []),
 ]
 
 function Inicio({ perfil, ir, salir }) {
@@ -75,11 +78,17 @@ export default function App() {
   const [params, setParams] = useState(null)
   const [pag, setPag] = useState(() => location.hash.slice(1) || 'inicio')
   const [cotAbrir, setCotAbrir] = useState(null)
+  const [configCot, setConfigCot] = useState(CONFIG_BASE)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
     const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
     return () => data.subscription.unsubscribe()
+  }, [])
+
+  const cargarConfigCot = useCallback(async () => {
+    const { data } = await supabase.from('config_cotizaciones').select('datos').eq('id', 1).maybeSingle()
+    setConfigCot(normalizarConfig(data?.datos))
   }, [])
 
   const cargarParams = useCallback(async () => {
@@ -91,7 +100,8 @@ export default function App() {
     if (!session) { setPerfil(session === null ? null : undefined); return }
     supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle().then(({ data }) => setPerfil(data || null))
     cargarParams()
-  }, [session?.user?.id, cargarParams])
+    cargarConfigCot()
+  }, [session?.user?.id, cargarParams, cargarConfigCot])
 
   useEffect(() => {
     const h = () => setPag(location.hash.slice(1) || 'inicio')
@@ -127,7 +137,7 @@ export default function App() {
   const abrirCotizacion = (c) => { setCotAbrir(c); ir('cot-nueva') }
 
   return (
-    <Ctx.Provider value={{ perfil, params, cargarParams, ir, cotAbrir, setCotAbrir, abrirCotizacion }}>
+    <Ctx.Provider value={{ perfil, params, cargarParams, ir, cotAbrir, setCotAbrir, abrirCotizacion, configCot, cargarConfigCot }}>
       <div className="app">
         <aside className="side no-print">
           <div className="marca">

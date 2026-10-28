@@ -124,8 +124,8 @@ export default function ListaCotizaciones() {
 
 // Pasa la cotización vendida a Comisiones: una venta por vehículo, con los precios cotizados
 function VenderModal({ c, onClose, onDone }) {
-  const { params, ir } = useApp()
-  const cot = cotizar(c.datos || {})
+  const { params, ir, configCot } = useApp()
+  const cot = cotizar(c.datos || {}, configCot)
   const [modalidad, setModalidad] = useState(c.tipo === 'empresa' ? 'Postpago' : 'Prepago')
   const [contrato, setContrato] = useState(true)
   const [fecha, setFecha] = useState(hoyISO())
