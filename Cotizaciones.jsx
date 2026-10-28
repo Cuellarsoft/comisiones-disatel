@@ -38,7 +38,8 @@ export default function Cotizaciones() {
   const [err, setErr] = useState('')
   const [aviso, setAviso] = useState('')
   const [trabajando, setTrabajando] = useState(false)
-  const [falta, setFalta] = useState('') // celular: segundo paso pendiente al enviar por los dos canales
+  const [falta, setFalta] = useState('')
+  const [guia, setGuia] = useState(null) // computadora: recordatorio para adjuntar el PDF descargado // celular: segundo paso pendiente al enviar por los dos canales
   const timer = useRef(null)
   const ultimo = useRef({ clave: '', bytes: null })
 
@@ -102,7 +103,7 @@ export default function Cotizaciones() {
 
   async function accion(canal) {
     const e = validar()
-    setErr(e); setAviso(''); setFalta('')
+    setErr(e); setAviso(''); setFalta(''); setGuia(null)
     if (e) return
     setTrabajando(true)
     try {
@@ -138,11 +139,8 @@ export default function Cotizaciones() {
       if (canal === 'email' || canal === 'ambos') {
         location.href = `mailto:${encodeURIComponent(f.email.trim())}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`
       }
-      setAviso({
-        whatsapp: 'Se descargó el PDF y se abrió WhatsApp con el mensaje listo. Adjunta el PDF descargado en el chat.',
-        email: 'Se descargó el PDF y se abrió tu correo con el mensaje listo. Adjunta el PDF descargado.',
-        ambos: 'Se descargó el PDF y se abrieron WhatsApp y tu correo con los mensajes listos. Adjunta el PDF descargado en los dos.',
-      }[canal])
+      // WhatsApp Web y el correo no aceptan adjuntos desde otra página: se guía al vendedor para adjuntarlo
+      setGuia({ canal, file, texto, asunto, cuerpo })
       await guardado
     } catch (x) {
       setErr('No se pudo preparar la cotización: ' + x.message)
@@ -245,6 +243,7 @@ export default function Cotizaciones() {
               </div>
               <Error msg={err} />
               {aviso && <div className="ok">{aviso}</div>}
+              {guia && <GuiaAdjuntar guia={guia} onDescargar={() => descargar(guia.file)} onCerrar={() => setGuia(null)} />}
               {falta === 'email' && (
                 <div className="ok cot-paso2">
                   <span>Listo el WhatsApp. Ahora envía la misma cotización por correo.</span>
@@ -264,5 +263,32 @@ export default function Cotizaciones() {
         </div>
       </div>
     </>
+  )
+}
+
+// Computadora: el PDF ya se descargó; WhatsApp Web y el correo se abren con el mensaje y falta adjuntarlo
+function GuiaAdjuntar({ guia, onDescargar, onCerrar }) {
+  const wa = guia.canal === 'whatsapp' || guia.canal === 'ambos'
+  const correo = guia.canal === 'email' || guia.canal === 'ambos'
+  const puedeCompartir = !!navigator.canShare?.({ files: [guia.file] })
+  async function compartir() {
+    try { await navigator.share({ files: [guia.file], title: guia.asunto, text: correo && !wa ? guia.cuerpo : guia.texto }) } catch { /* cancelado */ }
+  }
+  return (
+    <div className="guia-adjuntar" role="status">
+      <div className="ga-cab"><b>Falta un paso: adjuntar el PDF</b><button onClick={onCerrar} aria-label="Cerrar">×</button></div>
+      <p>El PDF <b>{guia.file.name}</b> se guardó en tu carpeta <b>Descargas</b>
+        {wa && correo ? ' y se abrieron WhatsApp y tu correo con el mensaje listo.' : wa ? ' y se abrió WhatsApp con el mensaje listo.' : ' y se abrió tu correo con el mensaje listo.'}</p>
+      <ol>
+        {wa && <li><b>WhatsApp:</b> en el chat, haz clic en <b>+</b> (o en el clip) → <b>Documento</b> y elige el PDF. También puedes arrastrarlo al chat desde las descargas del navegador.</li>}
+        {correo && <li><b>Correo:</b> usa <b>Adjuntar archivo</b> y elige el mismo PDF.</li>}
+        <li>Revisa que el PDF aparezca adjunto y envía.</li>
+      </ol>
+      <div className="ga-botones">
+        <button className="btn chico" onClick={onDescargar}>Descargar el PDF otra vez</button>
+        {puedeCompartir && <button className="btn chico" onClick={compartir}>Compartir con el PDF adjunto</button>}
+      </div>
+      {puedeCompartir && <span className="ga-nota">“Compartir” adjunta el PDF directo si tienes instalada la app de WhatsApp o Outlook en esta computadora.</span>}
+    </div>
   )
 }
