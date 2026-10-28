@@ -12,7 +12,6 @@ export const PLANES = {
     equipo: 'venta', // el equipo se vende al cliente
     tramos: [
       { hasta: 4, nombre: '1 a 4 vehículos', equipo: 390, mes: 85, roaming: 110, descSemestral: 0.05, descAnual: 0.1 },
-      // PENDIENTE DE CONFIRMAR: descuentos de 5 o más (en la planilla están vacíos)
       { hasta: Infinity, nombre: '5 o más vehículos', equipo: 390, mes: 65, roaming: 100, descSemestral: 0.05, descAnual: 0.1 },
     ],
     condiciones: [
@@ -26,7 +25,6 @@ export const PLANES = {
     equipo: 'comodato', // el equipo se entrega en comodato
     tramos: [
       { hasta: 30, nombre: '1 a 30 unidades', equipo: 0, mes: 96, roaming: 110, descSemestral: 0.05, descAnual: 0.1 },
-      // PENDIENTE DE CONFIRMAR: descuentos de 31 o más (en la planilla están vacíos)
       { hasta: Infinity, nombre: '31 unidades o más', equipo: 0, mes: 85, roaming: 100, descSemestral: 0.05, descAnual: 0.1 },
     ],
     condiciones: [
