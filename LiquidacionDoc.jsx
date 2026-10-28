@@ -1,7 +1,7 @@
 import logo from './logo.png'
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
-import { bs, fdate, mesLabel, MOTIVOS, pct } from './lib'
+import { bs, fdate, mesLabel, modalidad, MOTIVOS, pct } from './lib'
 import { Cargando } from './ui'
 
 // Resumen numérico (se usa en vista previa y en el documento)
@@ -53,9 +53,9 @@ export default function LiquidacionDoc({ liq, vendedor }) {
       <h4>Ventas comisionadas ({ventas.length})</h4>
       {ventas.length ? (
         <div className="tabla-wrap"><table>
-          <thead><tr><th>Instalación</th><th>Cliente</th><th>Vehículo</th><th>Modalidad</th><th className="r">Precio</th><th className="r">Comisión</th></tr></thead>
+          <thead><tr><th>Instalación</th><th>Cliente</th><th>Vehículo</th><th>Tipo</th><th className="r">Precio</th><th className="r">Comisión</th></tr></thead>
           <tbody>{ventas.map((v) => (
-            <tr key={v.id}><td>{fdate(v.fecha_instalacion)}</td><td>{v.cliente}<span className="sub">{v.empresa}</span></td><td>{v.vehiculo}</td><td>{v.modalidad}</td><td className="r num">{bs(v.precio_mensual)}</td><td className="r num">{bs(v.comision)}</td></tr>
+            <tr key={v.id}><td>{fdate(v.fecha_instalacion)}</td><td>{v.cliente}<span className="sub">{v.empresa}</span></td><td>{v.vehiculo}</td><td>{modalidad(v.modalidad)}</td><td className="r num">{bs(v.precio_mensual)}</td><td className="r num">{bs(v.comision)}</td></tr>
           ))}</tbody>
           <tfoot><tr><td colSpan="5">Total</td><td className="r num">{bs(ventas.reduce((s, v) => s + Number(v.comision), 0))}</td></tr></tfoot>
         </table></div>

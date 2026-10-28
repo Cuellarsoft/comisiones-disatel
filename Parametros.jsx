@@ -54,10 +54,10 @@ export default function Parametros() {
         <div className="card">
           <div className="ch"><h2>Comisión por unidad instalada</h2></div>
           <div className="cb form">
-            <Campo label="Precio Postpago (Bs/mes)"><input type="number" value={f.precio_postpago} onChange={set('precio_postpago')} /></Campo>
-            <Campo label="Comisión Postpago (%)"><input type="number" value={f.comision_postpago_pct} onChange={set('comision_postpago_pct')} /></Campo>
-            <Campo label="Precio Prepago (Bs/mes)"><input type="number" value={f.precio_prepago} onChange={set('precio_prepago')} /></Campo>
-            <Campo label="Comisión Prepago (%)"><input type="number" value={f.comision_prepago_pct} onChange={set('comision_prepago_pct')} /></Campo>
+            <Campo label="Precio Empresa (Bs/mes)"><input type="number" value={f.precio_postpago} onChange={set('precio_postpago')} /></Campo>
+            <Campo label="Comisión Empresa (%)"><input type="number" value={f.comision_postpago_pct} onChange={set('comision_postpago_pct')} /></Campo>
+            <Campo label="Precio Personal (Bs/mes)"><input type="number" value={f.precio_prepago} onChange={set('precio_prepago')} /></Campo>
+            <Campo label="Comisión Personal (%)"><input type="number" value={f.comision_prepago_pct} onChange={set('comision_prepago_pct')} /></Campo>
             <Campo label="Sueldo fijo por defecto (Bs)" ayuda="Para vendedores nuevos"><input type="number" value={f.sueldo_fijo_default} onChange={set('sueldo_fijo_default')} /></Campo>
           </div>
         </div>

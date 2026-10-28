@@ -165,12 +165,12 @@ function VenderModal({ c, onClose, onDone }) {
       </>}>
       <Error msg={err} />
       <div className="nota" style={{ marginBottom: 16 }}>
-        Se crea una venta por vehículo en Comisiones con el cliente, el precio cotizado y la modalidad. Si todavía no
+        Se crea una venta por vehículo en Comisiones con el cliente, el precio cotizado y el tipo de cliente. Si todavía no
         tienes las placas, déjalas vacías: quedan como “Por asignar” y las completas en Mis ventas antes de la instalación.
       </div>
       <div className="form" style={{ marginBottom: 18 }}>
-        <Campo label="Modalidad" ayuda={c.tipo === 'empresa' ? 'Empresa: servicio a mes vencido' : 'Personal: servicio por mes adelantado'}>
-          <select value={modalidad} onChange={(e) => setModalidad(e.target.value)}><option>Prepago</option><option>Postpago</option></select>
+        <Campo label="Tipo de cliente" ayuda={modalidad === 'Postpago' ? 'Empresa: servicio a mes vencido' : 'Personal: servicio por mes adelantado'}>
+          <select value={modalidad} onChange={(e) => setModalidad(e.target.value)}><option value="Prepago">Personal</option><option value="Postpago">Empresa</option></select>
         </Campo>
         <Campo label="Fecha de venta"><input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} /></Campo>
         <label className="check full"><input type="checkbox" checked={contrato} onChange={(e) => setContrato(e.target.checked)} /> Contrato firmado (12 meses)</label>

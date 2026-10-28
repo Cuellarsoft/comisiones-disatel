@@ -111,8 +111,8 @@ export default function VentaModal({ venta, vendedores = [], onClose, onSaved })
           <Campo label="Empresa"><input type="text" value={f.empresa} onChange={set('empresa')} placeholder="Particular" /></Campo>
           <Campo label="Vehículo / placa / ID"><input type="text" value={f.vehiculo} onChange={set('vehiculo')} /></Campo>
           <Campo label="Fecha de captación"><input type="date" value={f.fecha_captacion} onChange={set('fecha_captacion')} /></Campo>
-          <Campo label="Modalidad">
-            <select value={f.modalidad} onChange={cambiarModalidad}><option>Postpago</option><option>Prepago</option></select>
+          <Campo label="Tipo de cliente">
+            <select value={f.modalidad} onChange={cambiarModalidad}><option value="Postpago">Empresa</option><option value="Prepago">Personal</option></select>
           </Campo>
           <Campo label="Precio mensual (Bs)" ayuda={`Comisión ${Math.round(pctMod * 100)}% = ${bs(comisionCalc)}`}>
             <input type="number" min="0" step="0.01" value={f.precio_mensual} onChange={set('precio_mensual')} disabled={liquidada} />

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import { Cabecera, Cargando, Error, useApp } from './ui'
-import { bs, fdate, diasDesde, hoyISO, instalada } from './lib'
+import { bs, fdate, diasDesde, hoyISO, instalada, modalidad } from './lib'
 
 export default function Cobranza() {
   const { params } = useApp()
@@ -41,7 +41,7 @@ export default function Cobranza() {
           const dd = diasDesde(v.fecha_instalacion)
           return (
             <tr key={v.id}>
-              <td><b>{v.cliente}</b><span className="sub">{v.empresa || 'Particular'} · {v.vehiculo} · {v.modalidad}</span></td>
+              <td><b>{v.cliente}</b><span className="sub">{v.empresa || 'Particular'} · {v.vehiculo} · {modalidad(v.modalidad)}</span></td>
               <td>{nombre(v.vendedor_id)}</td>
               <td>{fdate(v.fecha_instalacion)}</td>
               <td className="r">

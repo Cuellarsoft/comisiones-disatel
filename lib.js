@@ -61,6 +61,10 @@ export function estadoVenta(v, plazo = 30) {
   return { txt: `Por cobrar · quedan ${plazo - d} d`, cls: 'ambar' }
 }
 
+// En la base se guarda Prepago / Postpago; en pantalla se muestra el tipo de cliente
+export const MODALIDAD = { Prepago: 'Personal', Postpago: 'Empresa' }
+export const modalidad = (m) => MODALIDAD[m] || m
+
 export const MOTIVOS = { no_pago: 'Sin pago', baja: 'Baja', reintegro: 'Reintegro' }
 
 export function bonoInfo(unidades, bonos = []) {
