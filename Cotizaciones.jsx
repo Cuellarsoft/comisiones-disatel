@@ -38,6 +38,7 @@ export default function Cotizaciones() {
   const [err, setErr] = useState('')
   const [aviso, setAviso] = useState('')
   const [trabajando, setTrabajando] = useState(false)
+  const [falta, setFalta] = useState('') // celular: segundo paso pendiente al enviar por los dos canales
   const timer = useRef(null)
   const ultimo = useRef({ clave: '', bytes: null })
 
@@ -101,7 +102,7 @@ export default function Cotizaciones() {
 
   async function accion(canal) {
     const e = validar()
-    setErr(e); setAviso('')
+    setErr(e); setAviso(''); setFalta('')
     if (e) return
     setTrabajando(true)
     try {
@@ -114,27 +115,34 @@ export default function Cotizaciones() {
       const cuerpo = `Estimado(a) ${saludo}:\n\nAdjunto ${doc} N.º ${numero} de nuestro servicio de rastreo GPS y monitoreo para ${veh}.\n\nQuedo atento a cualquier consulta.\n\nSaludos cordiales,\n${perfil.nombre}\nDISATEL Bolivia${miTel.trim() ? '\n' + miTel.trim() : ''}`
 
       // Se guarda en paralelo para no demorar el menú de compartir del celular
-      const guardado = registrar(canal === 'email' ? 'correo' : canal)
+      const guardado = registrar({ email: 'correo', ambos: 'whatsapp y correo' }[canal] || canal)
 
       if (canal === 'pdf') { descargar(file); await guardado; return }
 
       // En el celular: menú de compartir con el PDF adjunto (WhatsApp, Gmail, etc.)
       if (esMovil() && navigator.canShare({ files: [file] })) {
+        let compartido = true
         try {
-          await navigator.share({ files: [file], title: asunto, text: canal === 'whatsapp' ? texto : cuerpo })
-        } catch (x) { if (x.name !== 'AbortError') throw x }
+          await navigator.share({ files: [file], title: asunto, text: canal === 'email' ? cuerpo : texto })
+        } catch (x) { if (x.name !== 'AbortError') throw x; compartido = false }
+        // El celular solo permite un envío por toque: el correo queda como segundo paso
+        if (canal === 'ambos' && compartido) setFalta('email')
         await guardado
         return
       }
       // En la computadora: se descarga el PDF y se abre el chat o el correo para adjuntarlo
       descargar(file)
-      if (canal === 'whatsapp') {
+      if (canal === 'whatsapp' || canal === 'ambos') {
         window.open(`https://wa.me/${telWhatsapp(f.telefono)}?text=${encodeURIComponent(texto)}`, '_blank', 'noopener')
-        setAviso('Se descargó el PDF y se abrió WhatsApp con el mensaje listo. Adjunta el PDF descargado en el chat.')
-      } else {
-        location.href = `mailto:${encodeURIComponent(f.email.trim())}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`
-        setAviso('Se descargó el PDF y se abrió tu correo con el mensaje listo. Adjunta el PDF descargado.')
       }
+      if (canal === 'email' || canal === 'ambos') {
+        location.href = `mailto:${encodeURIComponent(f.email.trim())}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`
+      }
+      setAviso({
+        whatsapp: 'Se descargó el PDF y se abrió WhatsApp con el mensaje listo. Adjunta el PDF descargado en el chat.',
+        email: 'Se descargó el PDF y se abrió tu correo con el mensaje listo. Adjunta el PDF descargado.',
+        ambos: 'Se descargó el PDF y se abrieron WhatsApp y tu correo con los mensajes listos. Adjunta el PDF descargado en los dos.',
+      }[canal])
       await guardado
     } catch (x) {
       setErr('No se pudo preparar la cotización: ' + x.message)
@@ -237,7 +245,14 @@ export default function Cotizaciones() {
               </div>
               <Error msg={err} />
               {aviso && <div className="ok">{aviso}</div>}
+              {falta === 'email' && (
+                <div className="ok cot-paso2">
+                  <span>Listo el WhatsApp. Ahora envía la misma cotización por correo.</span>
+                  <button className="btn oscuro chico" onClick={() => accion('email')}>Enviar por correo</button>
+                </div>
+              )}
               <div className="cot-botones">
+                <button className="btn primario ambos" disabled={trabajando} onClick={() => accion('ambos')}>Enviar por WhatsApp y correo</button>
                 <button className="btn whatsapp" disabled={trabajando} onClick={() => accion('whatsapp')}>Enviar por WhatsApp</button>
                 <button className="btn oscuro" disabled={trabajando} onClick={() => accion('email')}>Enviar por correo</button>
                 <button className="btn" disabled={trabajando} onClick={() => accion('pdf')}>Descargar PDF</button>
