@@ -1,5 +1,8 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import logoUrl from './logo-cotizacion.png'
+import logoBlancoUrl from './logo-blanco.png'
+import clientesUrl from './clientes-disatel.jpg'
+import { GARANTIA, PROBLEMAS, QUIENES_SOMOS, RUBROS } from './propuestaTextos'
 import { INCLUYE } from './tarifas'
 import { fdate } from './lib'
 
@@ -16,14 +19,15 @@ const limpio = (s) => String(s ?? '').replace(/[−]/g, '-').replace(/[  ]/g
 
 export async function generarPdf(d) {
   const pdf = await PDFDocument.create()
-  pdf.setTitle(`Cotización ${d.numero} - ${d.cliente}`)
+  pdf.setTitle(`${d.presentacion ? 'Propuesta' : 'Cotización'} ${d.numero} - ${d.cliente}`)
   pdf.setAuthor('DISATEL Bolivia')
   const reg = await pdf.embedFont(StandardFonts.Helvetica)
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold)
-  const logo = await pdf.embedPng(await (await fetch(logoUrl)).arrayBuffer())
+  const bytesDe = async (u) => (await fetch(u)).arrayBuffer()
+  const logo = await pdf.embedPng(await bytesDe(logoUrl))
 
   const W = 595.28, H = 841.89, M = 44, ANCHO = W - 2 * M, PIE = 64
-  let page = pdf.addPage([W, H])
+  let page = null
   let y = M // distancia desde el borde superior
 
   const txt = (s, x, top, { size = 10, font = reg, color = C.tinta, align = 'left' } = {}) => {
@@ -55,6 +59,133 @@ export async function generarPdf(d) {
   }
   const espacio = (h) => { if (y + h > H - PIE) { pie(); page = pdf.addPage([W, H]); y = M } }
   const titulo = (s) => { espacio(40); txt(s.toUpperCase(), M, y, { size: 9, font: bold, color: C.rojo }); y += 15 }
+
+  if (d.presentacion) {
+    const logoBlanco = await pdf.embedPng(await bytesDe(logoBlancoUrl))
+    const clientes = await pdf.embedJpg(await bytesDe(clientesUrl))
+    const parrafo = (s, x, top, w, { size = 10, font = reg, color = C.grafito, alto = 1.45 } = {}) => {
+      const ls = lineas(s, font, size, w)
+      ls.forEach((l, i) => txt(l, x, top + i * size * alto, { size, font, color }))
+      return top + ls.length * size * alto
+    }
+    const cabecera = (eyebrow, tit) => {
+      page = pdf.addPage([W, H]); y = M
+      const lw2 = 92, lh2 = lw2 * logo.height / logo.width
+      page.drawImage(logo, { x: M, y: H - y - lh2, width: lw2, height: lh2 })
+      txt(`Propuesta para ${d.cliente}`, W - M, y + 14, { size: 8.5, color: C.gris, align: 'right' })
+      y += lh2 + 12
+      raya(y, C.rojo, 2)
+      y += 34
+      txt(eyebrow, M, y, { size: 9, font: bold, color: C.rojo }); y += 18
+      for (const l of lineas(tit, bold, 24, ANCHO)) { txt(l, M, y, { size: 24, font: bold }); y += 30 }
+      y += 10
+    }
+
+    // -- Portada
+    page = pdf.addPage([W, H])
+    rect(0, 0, W, H, C.tinta)
+    rect(0, 0, 10, H, C.rojo)
+    const lwb = 190
+    page.drawImage(logoBlanco, { x: M + 6, y: H - 70 - lwb * logoBlanco.height / logoBlanco.width, width: lwb, height: lwb * logoBlanco.height / logoBlanco.width })
+    let yc = 300
+    txt('PROPUESTA COMERCIAL', M + 6, yc, { size: 11, font: bold, color: C.rojo }); yc += 26
+    for (const l of ['Rastreo GPS y', 'monitoreo de flota']) { txt(l, M + 6, yc, { size: 36, font: bold, color: C.blanco }); yc += 42 }
+    yc += 30
+    txt('Preparada para', M + 6, yc, { size: 11, color: hex('#AEB4B9') }); yc += 18
+    for (const l of lineas(d.cliente, bold, 22, ANCHO - 10)) { txt(l, M + 6, yc, { size: 22, font: bold, color: C.blanco }); yc += 27 }
+    if (d.atencion) { txt(`Atención: ${d.atencion}`, M + 6, yc + 2, { size: 11, color: hex('#C9CCD1') }); yc += 18 }
+    const yb = H - 150
+    page.drawLine({ start: { x: M + 6, y: H - yb + 14 }, end: { x: W - M, y: H - yb + 14 }, thickness: 0.8, color: hex('#3A3F44') })
+    const colsP = [
+      ['FECHA', [fdate(d.fecha)]],
+      ['N.º DE PROPUESTA', [d.numero]],
+      ['PRESENTADA POR', [d.vendedor.nombre, d.vendedor.telefono, d.vendedor.email].filter(Boolean)],
+    ]
+    const xs = [M + 6, M + 6 + ANCHO * 0.26, M + 6 + ANCHO * 0.56]
+    colsP.forEach(([et, vals], i) => {
+      txt(et, xs[i], yb, { size: 8, font: bold, color: hex('#8A9095') })
+      vals.forEach((v, j) => txt(v, xs[i], yb + 15 + j * 14, { size: j ? 9.5 : 11, font: j ? reg : bold, color: j ? hex('#C9CCD1') : C.blanco }))
+    })
+    txt('Siempre una solución inteligente', M + 6, H - 50, { size: 9, color: hex('#8A9095') })
+
+    // -- Quiénes somos
+    cabecera('QUIÉNES SOMOS', QUIENES_SOMOS.titulo)
+    y = parrafo(QUIENES_SOMOS.texto, M, y, ANCHO, { size: 11 }) + 26
+    const cw = (ANCHO - 20) / 3
+    QUIENES_SOMOS.cifras.forEach((c, i) => {
+      const x = M + i * (cw + 10)
+      rect(x, y, cw, 84, C.suave)
+      rect(x, y, 3, 84, C.rojo)
+      txt(c.valor, x + 16, y + 14, { size: 26, font: bold, color: C.rojo })
+      parrafo(c.etiqueta, x + 16, y + 50, cw - 28, { size: 9, color: C.grafito, alto: 1.3 })
+    })
+    y += 84 + 34
+    txt('POR QUÉ ELEGIRNOS', M, y, { size: 9, font: bold, color: C.rojo }); y += 20
+    const pw = (ANCHO - 16) / 2
+    for (let i = 0; i < QUIENES_SOMOS.pilares.length; i += 2) {
+      let fin = y
+      QUIENES_SOMOS.pilares.slice(i, i + 2).forEach((p, j) => {
+        const x = M + j * (pw + 16)
+        rect(x, y + 3, 7, 7, C.rojo)
+        txt(p.titulo, x + 16, y, { size: 12, font: bold })
+        fin = Math.max(fin, parrafo(p.texto, x + 16, y + 18, pw - 20, { size: 9.5 }))
+      })
+      y = fin + 22
+    }
+    pie()
+
+    // -- Empresas que confían en nosotros
+    cabecera('EMPRESAS QUE CONFÍAN EN NOSOTROS', 'Nos eligen empresas de todos los rubros')
+    y = parrafo('Estas son algunas de las empresas que hoy controlan sus vehículos y operaciones con DISATEL.', M, y, ANCHO, { size: 11 }) + 18
+    const ih = ANCHO * clientes.height / clientes.width
+    page.drawImage(clientes, { x: M, y: H - y - ih, width: ANCHO, height: ih })
+    y += ih + 30
+    txt('RUBROS QUE ATENDEMOS', M, y, { size: 9, font: bold, color: C.rojo }); y += 20
+    let xr = M
+    for (const r of RUBROS) {
+      const w = bold.widthOfTextAtSize(limpio(r), 9) + 22
+      if (xr + w > W - M) { xr = M; y += 30 }
+      rect(xr, y, w, 22, C.suave)
+      txt(r, xr + 11, y + 7, { size: 9, font: bold, color: C.grafito })
+      xr += w + 8
+    }
+    pie()
+
+    // -- Problemas que solucionamos y garantía
+    cabecera('QUÉ PROBLEMAS SOLUCIONAMOS', PROBLEMAS.titulo)
+    const xSol = M + ANCHO * 0.42
+    rect(M, y, ANCHO, 22, C.suave)
+    txt('EL PROBLEMA', M + 12, y + 7, { size: 8.5, font: bold, color: C.gris })
+    txt('CÓMO LO RESOLVEMOS', xSol, y + 7, { size: 8.5, font: bold, color: C.gris })
+    y += 22
+    for (const f of PROBLEMAS.filas) {
+      const top = y + 12
+      const finP = parrafo(f.problema, M + 12, top, ANCHO * 0.42 - 26, { size: 10.5, font: bold, color: C.tinta, alto: 1.3 })
+      const finS = parrafo(f.solucion, xSol, top, W - M - xSol - 8, { size: 10, alto: 1.4 })
+      y = Math.max(finP, finS) + 12
+      raya(y)
+    }
+    y += 34
+    // Garantía de respuesta
+    const tl = lineas(GARANTIA.titulo, bold, 19, ANCHO - 48)
+    const pl = lineas(GARANTIA.texto, reg, 10, ANCHO - 48)
+    const contacto = [d.vendedor.telefono && `WhatsApp y teléfono: ${d.vendedor.telefono}`, d.vendedor.email && `Correo: ${d.vendedor.email}`].filter(Boolean)
+    const gh = 24 + 16 + tl.length * 24 + 8 + pl.length * 14 + (contacto.length ? 16 + 16 : 0) + 22
+    rect(M, y, ANCHO, gh, C.rojo)
+    let yg = y + 24
+    txt('NUESTRA GARANTÍA DE RESPUESTA', M + 24, yg, { size: 9, font: bold, color: hex('#FFD7D8') }); yg += 16
+    tl.forEach((l) => { txt(l, M + 24, yg, { size: 19, font: bold, color: C.blanco }); yg += 24 })
+    yg += 8
+    pl.forEach((l) => { txt(l, M + 24, yg, { size: 10, color: C.blanco }); yg += 14 })
+    if (contacto.length) {
+      yg += 16
+      txt(`${d.vendedor.nombre} · ${contacto.join(' · ')}`, M + 24, yg, { size: 10, font: bold, color: C.blanco })
+    }
+    y += gh
+    pie()
+  }
+
+  page = pdf.addPage([W, H]); y = M
 
   // ---- Encabezado
   const lw = 150, lh = lw * logo.height / logo.width

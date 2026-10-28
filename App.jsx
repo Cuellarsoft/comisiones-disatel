@@ -77,7 +77,7 @@ export default function App() {
       <div className="login"><div className="caja">
         <img src={logo} alt="Disatel" />
         <div className="card" style={{ textAlign: 'center' }}>
-          <p>Este usuario no tiene acceso a la plataforma de comisiones.</p>
+          <p>Este usuario no tiene acceso a la plataforma de ventas.</p>
           <button className="btn" onClick={salir}>Salir</button>
         </div>
       </div></div>
@@ -94,7 +94,7 @@ export default function App() {
         <aside className="side no-print">
           <div className="marca">
             <img src={logo} alt="Disatel" />
-            <small>Comisiones</small>
+            <small>Depto. Ventas</small>
           </div>
           <nav>
             {menu.map(([k, t, C]) => C

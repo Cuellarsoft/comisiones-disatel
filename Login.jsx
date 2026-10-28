@@ -21,7 +21,7 @@ export default function Login() {
     <div className="login">
       <div className="caja">
         <img src={logo} alt="Disatel" />
-        <div className="tit">Plataforma de comisiones</div>
+        <div className="tit">Departamento de Ventas</div>
         <form className="card" onSubmit={entrar}>
           <Error msg={err} />
           <Campo label="Correo"><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus required /></Campo>

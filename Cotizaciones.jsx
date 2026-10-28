@@ -21,7 +21,7 @@ const telWhatsapp = (t) => {
 }
 const esMovil = () => window.matchMedia?.('(pointer: coarse)').matches && !!navigator.canShare
 
-const VACIO = { cliente: '', atencion: '', telefono: '', email: '', tipo: 'personal', unidades: 1, conRoaming: 0, accesorios: {}, bonificar: false, notas: '' }
+const VACIO = { cliente: '', atencion: '', telefono: '', email: '', tipo: 'personal', unidades: 1, conRoaming: 0, accesorios: {}, bonificar: false, notas: '', presentacion: true }
 
 export default function Cotizaciones() {
   const { perfil } = useApp()
@@ -42,10 +42,10 @@ export default function Cotizaciones() {
 
   const datos = () => ({
     cot, numero, fecha, validoHasta: masDias(fecha, VALIDEZ_DIAS),
-    cliente: f.cliente.trim() || '[Nombre del cliente]', atencion: f.atencion.trim(), notas: f.notas,
+    cliente: f.cliente.trim() || '[Nombre del cliente]', atencion: f.atencion.trim(), notas: f.notas, presentacion: f.presentacion,
     vendedor: { nombre: perfil.nombre, telefono: miTel.trim(), email: perfil.email },
   })
-  const archivo = () => `Cotizacion DISATEL - ${(f.cliente.trim() || 'cliente').replace(/[\\/:*?"<>|]/g, '')}.pdf`
+  const archivo = () => `${f.presentacion ? 'Propuesta' : 'Cotizacion'} DISATEL - ${(f.cliente.trim() || 'cliente').replace(/[\\/:*?"<>|]/g, '')}.pdf`
 
   const claveActual = JSON.stringify([f, miTel, numero])
 
@@ -90,10 +90,11 @@ export default function Cotizaciones() {
     try {
       const file = await armarArchivo()
       const saludo = f.atencion.trim() || f.cliente.trim()
+      const doc = f.presentacion ? 'nuestra propuesta con la cotización' : 'la cotización'
       const veh = `${cot.unidades} ${cot.unidades === 1 ? 'vehículo' : 'vehículos'}`
-      const texto = `Hola ${saludo}, le saluda ${perfil.nombre} de DISATEL. Le envío la cotización N.º ${numero} de rastreo GPS para ${veh}. Quedo atento a cualquier consulta.`
-      const asunto = `Cotización DISATEL N.º ${numero} - ${f.cliente.trim()}`
-      const cuerpo = `Estimado(a) ${saludo}:\n\nAdjunto la cotización N.º ${numero} de nuestro servicio de rastreo GPS y monitoreo para ${veh}.\n\nQuedo atento a cualquier consulta.\n\nSaludos cordiales,\n${perfil.nombre}\nDISATEL Bolivia${miTel.trim() ? '\n' + miTel.trim() : ''}`
+      const texto = `Hola ${saludo}, le saluda ${perfil.nombre} de DISATEL. Le envío ${doc} N.º ${numero} de rastreo GPS para ${veh}. Quedo atento a cualquier consulta.`
+      const asunto = `${f.presentacion ? 'Propuesta' : 'Cotización'} DISATEL N.º ${numero} - ${f.cliente.trim()}`
+      const cuerpo = `Estimado(a) ${saludo}:\n\nAdjunto ${doc} N.º ${numero} de nuestro servicio de rastreo GPS y monitoreo para ${veh}.\n\nQuedo atento a cualquier consulta.\n\nSaludos cordiales,\n${perfil.nombre}\nDISATEL Bolivia${miTel.trim() ? '\n' + miTel.trim() : ''}`
 
       if (canal === 'pdf') { descargar(file); return }
 
@@ -124,7 +125,7 @@ export default function Cotizaciones() {
 
   return (
     <>
-      <Cabecera titulo="Cotizaciones" sub={`N.º ${numero} · el PDF se arma con los precios vigentes de DISATEL`}>
+      <Cabecera titulo="Cotizaciones" sub={`N.º ${numero} · arma la propuesta en PDF con los precios vigentes de DISATEL`}>
         <button className="btn" onClick={nueva}>Nueva cotización</button>
       </Cabecera>
 
@@ -180,6 +181,12 @@ export default function Cotizaciones() {
                   Bonificar accesorios (más de {UMBRAL_BONIFICAR} unidades)
                 </label>
               )}
+
+              <h3>Documento</h3>
+              <label className="check full">
+                <input type="checkbox" checked={f.presentacion} onChange={set('presentacion')} />
+                Incluir la presentación de DISATEL antes de la cotización (quiénes somos, clientes, problemas que resolvemos y garantía de respuesta)
+              </label>
 
               <h3>Tus datos y notas</h3>
               <Campo label="Tu teléfono" ayuda="Sale en el PDF; queda guardado en este equipo" full>
