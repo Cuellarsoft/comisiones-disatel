@@ -18,11 +18,6 @@ export const QUIENES_SOMOS = {
   ],
 }
 
-export const RUBROS = [
-  'Transporte y logística', 'Agropecuario', 'Construcción', 'Minería', 'Energía', 'Combustibles',
-  'Consumo masivo', 'Farmacéutico', 'Manufactura', 'Seguridad',
-]
-
 export const PROBLEMAS = {
   titulo: 'Lo que no se ve en su flota, le cuesta dinero',
   filas: [

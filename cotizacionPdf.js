@@ -2,7 +2,7 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import logoUrl from './logo-cotizacion.png'
 import logoBlancoUrl from './logo-blanco.png'
 import clientesUrl from './clientes-disatel.jpg'
-import { GARANTIA, PROBLEMAS, QUIENES_SOMOS, RUBROS } from './propuestaTextos'
+import { GARANTIA, PROBLEMAS, QUIENES_SOMOS } from './propuestaTextos'
 import { INCLUYE } from './tarifas'
 import { fdate } from './lib'
 
@@ -132,23 +132,16 @@ export async function generarPdf(d) {
       })
       y = fin + 22
     }
-    pie()
 
-    // -- Empresas que confían en nosotros
-    cabecera('EMPRESAS QUE CONFÍAN EN NOSOTROS', 'Nos eligen empresas de todos los rubros')
-    y = parrafo('Estas son algunas de las empresas que hoy controlan sus vehículos y operaciones con DISATEL.', M, y, ANCHO, { size: 11 }) + 18
+    // Empresas que confían en nosotros (en la misma página)
+    y += 8
+    raya(y)
+    y += 24
+    txt('EMPRESAS QUE CONFÍAN EN NOSOTROS', M, y, { size: 9, font: bold, color: C.rojo }); y += 18
+    y = parrafo('Algunas de las empresas que hoy controlan sus vehículos y operaciones con DISATEL.', M, y, ANCHO, { size: 10 }) + 12
     const ih = ANCHO * clientes.height / clientes.width
     page.drawImage(clientes, { x: M, y: H - y - ih, width: ANCHO, height: ih })
-    y += ih + 30
-    txt('RUBROS QUE ATENDEMOS', M, y, { size: 9, font: bold, color: C.rojo }); y += 20
-    let xr = M
-    for (const r of RUBROS) {
-      const w = bold.widthOfTextAtSize(limpio(r), 9) + 22
-      if (xr + w > W - M) { xr = M; y += 30 }
-      rect(xr, y, w, 22, C.suave)
-      txt(r, xr + 11, y + 7, { size: 9, font: bold, color: C.grafito })
-      xr += w + 8
-    }
+    y += ih
     pie()
 
     // -- Problemas que solucionamos y garantía
