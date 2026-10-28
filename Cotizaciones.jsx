@@ -2,11 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Cabecera, Campo, Error, useApp } from './ui'
 import { ACCESORIOS, PLANES, UMBRAL_BONIFICAR, VALIDEZ_DIAS, cotizar } from './tarifas'
 import { bsPdf, generarPdf } from './cotizacionPdf'
-import { hoyISO } from './lib'
+import { fdate, hoyISO } from './lib'
+import { supabase } from './supabase'
 
-const nuevoNumero = () => {
+// N.º único: fecha, hora y las iniciales del vendedor (dos vendedores no chocan en el mismo minuto)
+const nuevoNumero = (nombre = '') => {
   const d = new Date(), p = (n) => String(n).padStart(2, '0')
-  return `COT-${String(d.getFullYear()).slice(2)}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`
+  const ini = nombre.trim().split(/\s+/).map((x) => x[0] || '').join('').slice(0, 3).toUpperCase() || 'DS'
+  return `COT-${String(d.getFullYear()).slice(2)}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}-${ini}`
 }
 const masDias = (iso, n) => {
   const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n)
@@ -24,9 +27,12 @@ const esMovil = () => window.matchMedia?.('(pointer: coarse)').matches && !!navi
 const VACIO = { cliente: '', atencion: '', telefono: '', email: '', tipo: 'personal', unidades: 1, conRoaming: 0, accesorios: {}, bonificar: false, notas: '', presentacion: true }
 
 export default function Cotizaciones() {
-  const { perfil } = useApp()
-  const [f, setF] = useState(VACIO)
-  const [numero, setNumero] = useState(nuevoNumero)
+  const { perfil, cotAbrir, setCotAbrir } = useApp()
+  const abierta = cotAbrir?.id ? cotAbrir : null
+  const soloLectura = abierta?.estado === 'Vendida'
+  const [f, setF] = useState(() => (abierta ? { ...VACIO, ...abierta.datos } : VACIO))
+  const [numero, setNumero] = useState(() => abierta?.numero || nuevoNumero(perfil.nombre))
+  const [fecha, setFecha] = useState(() => abierta?.fecha || hoyISO())
   const [miTel, setMiTel] = useState(() => leer('cot_mi_telefono'))
   const [pdfUrl, setPdfUrl] = useState('')
   const [err, setErr] = useState('')
@@ -35,7 +41,6 @@ export default function Cotizaciones() {
   const timer = useRef(null)
   const ultimo = useRef({ clave: '', bytes: null })
 
-  const fecha = hoyISO()
   const cot = useMemo(() => cotizar(f), [f])
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
   const setAcc = (id, v) => setF((s) => ({ ...s, accesorios: { ...s.accesorios, [id]: v } }))
@@ -47,7 +52,7 @@ export default function Cotizaciones() {
   })
   const archivo = () => `${f.presentacion ? 'Propuesta' : 'Cotizacion'} DISATEL - ${(f.cliente.trim() || 'cliente').replace(/[\\/:*?"<>|]/g, '')}.pdf`
 
-  const claveActual = JSON.stringify([f, miTel, numero])
+  const claveActual = JSON.stringify([f, miTel, numero, fecha])
 
   // Vista previa del PDF (se regenera al cambiar los datos)
   useEffect(() => {
@@ -61,12 +66,24 @@ export default function Cotizaciones() {
       } catch (e) { setErr('No se pudo generar la vista previa: ' + e.message) }
     }, 350)
     return () => clearTimeout(timer.current)
-  }, [f, miTel, numero]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [f, miTel, numero, fecha]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function validar() {
     if (!f.cliente.trim()) return 'Escribe el nombre del cliente o la empresa.'
     if (cot.unidades < 1) return 'La cantidad de vehículos debe ser al menos 1.'
     return ''
+  }
+
+  // Guarda o actualiza la cotización para verla en "Mis cotizaciones" y poder pasarla a Comisiones
+  async function registrar(canal) {
+    if (soloLectura) return
+    const { error } = await supabase.from('cotizaciones').upsert({
+      numero, vendedor_id: abierta?.vendedor_id || perfil.id, fecha,
+      cliente: f.cliente.trim(), atencion: f.atencion.trim() || null, telefono: f.telefono.trim() || null, email: f.email.trim() || null,
+      tipo: f.tipo, unidades: cot.unidades, con_roaming: cot.conRoaming, datos: f,
+      total_inicial: cot.totalInicial, total_mensual: cot.totalMensual, enviada_por: canal,
+    }, { onConflict: 'numero' })
+    if (error) throw new globalThis.Error('No se pudo guardar la cotización: ' + error.message)
   }
 
   async function armarArchivo() {
@@ -96,13 +113,17 @@ export default function Cotizaciones() {
       const asunto = `${f.presentacion ? 'Propuesta' : 'Cotización'} DISATEL N.º ${numero} - ${f.cliente.trim()}`
       const cuerpo = `Estimado(a) ${saludo}:\n\nAdjunto ${doc} N.º ${numero} de nuestro servicio de rastreo GPS y monitoreo para ${veh}.\n\nQuedo atento a cualquier consulta.\n\nSaludos cordiales,\n${perfil.nombre}\nDISATEL Bolivia${miTel.trim() ? '\n' + miTel.trim() : ''}`
 
-      if (canal === 'pdf') { descargar(file); return }
+      // Se guarda en paralelo para no demorar el menú de compartir del celular
+      const guardado = registrar(canal === 'email' ? 'correo' : canal)
+
+      if (canal === 'pdf') { descargar(file); await guardado; return }
 
       // En el celular: menú de compartir con el PDF adjunto (WhatsApp, Gmail, etc.)
       if (esMovil() && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({ files: [file], title: asunto, text: canal === 'whatsapp' ? texto : cuerpo })
         } catch (x) { if (x.name !== 'AbortError') throw x }
+        await guardado
         return
       }
       // En la computadora: se descarga el PDF y se abre el chat o el correo para adjuntarlo
@@ -114,25 +135,29 @@ export default function Cotizaciones() {
         location.href = `mailto:${encodeURIComponent(f.email.trim())}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`
         setAviso('Se descargó el PDF y se abrió tu correo con el mensaje listo. Adjunta el PDF descargado.')
       }
+      await guardado
     } catch (x) {
       setErr('No se pudo preparar la cotización: ' + x.message)
     } finally { setTrabajando(false) }
   }
 
   function nueva() {
-    setF(VACIO); setNumero(nuevoNumero()); setErr(''); setAviso('')
+    setCotAbrir?.(null)
+    setF(VACIO); setNumero(nuevoNumero(perfil.nombre)); setFecha(hoyISO()); setErr(''); setAviso('')
   }
 
   return (
     <>
-      <Cabecera titulo="Cotizaciones" sub={`N.º ${numero} · arma la propuesta en PDF con los precios vigentes de DISATEL`}>
+      <Cabecera titulo={abierta ? `Cotización ${abierta.cliente}` : 'Nueva cotización'}
+        sub={abierta ? `N.º ${numero} · creada el ${fdate(fecha)} · ${abierta.estado}` : `N.º ${numero} · arma la propuesta en PDF con los precios vigentes de DISATEL`}>
         <button className="btn" onClick={nueva}>Nueva cotización</button>
       </Cabecera>
+      {soloLectura && <div className="nota" style={{ marginBottom: 16 }}>Esta cotización ya se vendió y pasó a Comisiones. Puedes volver a descargarla o enviarla, pero no modificarla.</div>}
 
       <div className="cot">
         <div className="cot-form">
           <div className="card"><div className="cb">
-            <div className="form">
+            <fieldset className="form" disabled={soloLectura} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
               <h3>Cliente</h3>
               <Campo label="Cliente o empresa *" full>
                 <input type="text" value={f.cliente} onChange={set('cliente')} placeholder="Ej.: Transportes Andinos SRL" />
@@ -195,7 +220,7 @@ export default function Cotizaciones() {
               <Campo label="Notas para el cliente" ayuda="Opcional; aparece al final del PDF" full>
                 <textarea rows="3" value={f.notas} onChange={set('notas')} />
               </Campo>
-            </div>
+            </fieldset>
           </div></div>
         </div>
 
