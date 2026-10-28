@@ -13,10 +13,12 @@ import Vendedores from './Vendedores'
 import Parametros from './Parametros'
 import MiCuenta from './MiCuenta'
 import Historial from './Historial'
+import Cotizaciones from './Cotizaciones'
 
 const MENU_ADMIN = [
   ['resumen', 'Resumen', ResumenAdmin],
   ['ventas', 'Ventas', Ventas],
+  ['cotizaciones', 'Cotizaciones', Cotizaciones],
   ['cobranza', 'Cobranza', Cobranza],
   ['clawbacks', 'Clawbacks', Clawbacks],
   ['liquidaciones', 'Liquidaciones', Liquidaciones],
@@ -29,6 +31,7 @@ const MENU_ADMIN = [
 const MENU_VENDEDOR = [
   ['resumen', 'Mi resumen', MiResumen],
   ['ventas', 'Mis ventas', Ventas],
+  ['cotizaciones', 'Cotizaciones', Cotizaciones],
   ['clawbacks', 'Mis descuentos', Clawbacks],
   ['liquidaciones', 'Mis liquidaciones', Liquidaciones],
   ['cuenta', 'Mi cuenta', MiCuenta],
