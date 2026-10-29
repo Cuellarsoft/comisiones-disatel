@@ -68,6 +68,64 @@ Deno.serve(async (req) => {
       return json({ ok: true })
     }
 
+    if (b.accion === 'importar') {
+      // Trae los comentarios recientes de las publicaciones (sirve aunque Meta todavía no mande los avisos de comentarios)
+      const { data: yo } = await admin.from('profiles').select('rol').eq('id', user.id).single()
+      const { data: cs } = await admin.from('redes_cuentas').select('*').eq('activo', true)
+      const mias = (cs ?? []).filter((c: any) => yo?.rol === 'admin' || c.vendedor_id === user.id)
+      if (!mias.length) throw new ErrorUsuario('No tienes cuentas de Facebook o Instagram a tu cargo.')
+      let nuevos = 0
+      const errores: string[] = []
+      for (const c of mias) {
+        const token = Deno.env.get(c.secreto || '') ?? ''
+        if (!token) { errores.push(`Falta la clave de ${c.nombre}.`); continue }
+        const fb = c.plataforma === 'facebook'
+        const campos = fb
+          ? `posts?limit=15&fields=id,permalink_url,comments.limit(50).order(reverse_chronological){id,from{id,name},message,created_time,comments{id,from{id,name},message,created_time}}`
+          : `media?limit=15&fields=id,permalink,comments.limit(50){id,text,username,from{id,username},timestamp,replies{id,text,username,from{id,username},timestamp}}`
+        const r = await fetch(`https://graph.facebook.com/${VER}/${c.cuenta_id}/${campos}`, { headers: { Authorization: `Bearer ${token}` } })
+        const j = await r.json().catch(() => ({}))
+        if (!r.ok) { errores.push(`${c.nombre}: ${traducir(j)}`); continue }
+        const filas: any[] = []
+        const pagina = (x: any) => (fb ? x.from?.id === c.cuenta_id : (x.from?.id === c.cuenta_id || ('@' + x.username) === c.nombre))
+        for (const p of j.data ?? []) {
+          const url = fb ? p.permalink_url : p.permalink
+          for (const k of p.comments?.data ?? []) {
+            const resp = fb ? k.comments?.data ?? [] : k.replies?.data ?? []
+            const propio = pagina(k)
+            const nombre = (x: any) => x.from?.name || (x.username ? '@' + x.username : x.from?.username ? '@' + x.from.username : null)
+            filas.push({
+              cuenta_id: c.id, plataforma: c.plataforma, clase: 'comentario', direccion: propio ? 'saliente' : 'entrante', origen: propio ? 'pagina' : 'cliente',
+              usuario_id: propio ? null : k.from?.id ?? null, usuario_nombre: propio ? c.nombre : nombre(k), texto: fb ? k.message : k.text,
+              mid: k.id, publicacion_id: p.id, publicacion_url: url ?? null, respondido: resp.some(pagina),
+              fecha: new Date(fb ? k.created_time : k.timestamp).toISOString(),
+            })
+            for (const x of resp) {
+              const suyo = pagina(x)
+              filas.push({
+                cuenta_id: c.id, plataforma: c.plataforma, clase: 'comentario', direccion: suyo ? 'saliente' : 'entrante', origen: suyo ? 'pagina' : 'cliente',
+                usuario_id: suyo ? null : x.from?.id ?? null, usuario_nombre: suyo ? c.nombre : nombre(x), texto: fb ? x.message : x.text,
+                mid: x.id, responde_a: k.id, publicacion_id: p.id, publicacion_url: url ?? null,
+                fecha: new Date(fb ? x.created_time : x.timestamp).toISOString(),
+              })
+            }
+          }
+        }
+        if (!filas.length) continue
+        const { data: ya } = await admin.from('redes_mensajes').select('mid').in('mid', filas.map((f) => f.mid))
+        const existentes = new Set((ya ?? []).map((x: any) => x.mid))
+        const nuevas = filas.filter((f) => !existentes.has(f.mid))
+        if (nuevas.length) {
+          const { error } = await admin.from('redes_mensajes').insert(nuevas)
+          if (error) errores.push(`${c.nombre}: ${error.message}`); else nuevos += nuevas.length
+        }
+        // Lo que se respondió desde Facebook o Instagram queda marcado
+        const respondidos = filas.filter((f) => f.respondido).map((f) => f.mid)
+        if (respondidos.length) await admin.from('redes_mensajes').update({ respondido: true }).in('mid', respondidos)
+      }
+      return json({ ok: true, nuevos, errores })
+    }
+
     // Las demás acciones parten de un comentario o mensaje que el usuario puede ver
     const { data: m } = await usuario.from('redes_mensajes').select('*').eq('id', b.mensaje_id).maybeSingle()
     if (!m) throw new ErrorUsuario('Mensaje no encontrado.')

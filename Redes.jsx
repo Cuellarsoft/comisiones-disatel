@@ -118,11 +118,28 @@ function Conversaciones({ msgs, clientes, abrirFicha, onCambio }) {
 
 function Comentarios({ msgs, clientes, abrirFicha, onCambio }) {
   const [solo, setSolo] = useState(true)
+  const [trayendo, setTrayendo] = useState(false)
+  const [aviso, setAviso] = useState('')
+  const [err, setErr] = useState('')
   const entrantes = msgs.filter((m) => m.direccion === 'entrante' && (!solo || !m.respondido))
   const respuestas = (mid) => msgs.filter((m) => m.responde_a === mid && m.direccion === 'saliente').reverse()
+  async function traer() {
+    setErr(''); setAviso(''); setTrayendo(true)
+    try {
+      const r = await redes({ accion: 'importar' })
+      setAviso(r.nuevos ? `Se trajeron ${r.nuevos} ${r.nuevos === 1 ? 'comentario nuevo' : 'comentarios nuevos'} de las últimas publicaciones.` : 'No hay comentarios nuevos en las últimas publicaciones.')
+      if (r.errores?.length) setErr(r.errores.join(' '))
+      await onCambio()
+    } catch (e) { setErr(e.message) } finally { setTrayendo(false) }
+  }
   return (
     <>
-      <label className="check" style={{ marginBottom: 12 }}><input type="checkbox" checked={solo} onChange={(e) => setSolo(e.target.checked)} /> Solo los que faltan responder</label>
+      <div className="red-com-barra">
+        <label className="check"><input type="checkbox" checked={solo} onChange={(e) => setSolo(e.target.checked)} /> Solo los que faltan responder</label>
+        <button className="btn chico" disabled={trayendo} onClick={traer}>{trayendo ? 'Buscando…' : 'Traer comentarios recientes'}</button>
+      </div>
+      <Error msg={err} />
+      {aviso && <div className="ok">{aviso}</div>}
       <div className="red-comentarios">
         {entrantes.map((m) => <Comentario key={m.id} m={m} resp={respuestas(m.mid)} cliente={clientes.find((c) => c.id === m.cliente_id)} abrirFicha={abrirFicha} onCambio={onCambio} />)}
         {!entrantes.length && <div className="card"><div className="cb vacio">{solo ? 'No hay comentarios pendientes de respuesta.' : 'Todavía no llegaron comentarios.'}</div></div>}
