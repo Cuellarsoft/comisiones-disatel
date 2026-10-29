@@ -62,7 +62,7 @@ create table if not exists public.actividades (
   id bigint generated always as identity primary key,
   cliente_id bigint not null references public.clientes(id) on delete cascade,
   vendedor_id uuid references public.profiles(id),
-  tipo text not null check (tipo in ('llamada', 'whatsapp', 'visita', 'correo', 'cotizacion', 'nota', 'etapa', 'venta')),
+  tipo text not null check (tipo in ('llamada', 'whatsapp', 'visita', 'videollamada', 'correo', 'cotizacion', 'nota', 'etapa', 'venta')),
   texto text not null,
   fecha timestamptz not null default now()
 );

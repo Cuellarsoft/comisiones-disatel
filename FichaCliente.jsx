@@ -184,13 +184,13 @@ function Historial({ c, acts, nombre, onCambio }) {
   async function registrar() {
     if (!texto.trim()) return
     await registrarActividad(c.id, tipo, texto.trim())
-    if (c.etapa === 'Prospecto' && ['llamada', 'whatsapp', 'visita', 'correo'].includes(tipo)) await cambiarEtapa(c, 'Contactado')
+    if (c.etapa === 'Prospecto' && ['llamada', 'whatsapp', 'visita', 'videollamada', 'correo'].includes(tipo)) await cambiarEtapa(c, 'Contactado')
     setTexto(''); onCambio()
   }
   return <>
     <div className="crm-registrar">
       <select value={tipo} onChange={(e) => setTipo(e.target.value)} aria-label="Tipo de actividad">
-        {['llamada', 'whatsapp', 'visita', 'correo', 'nota'].map((k) => <option key={k} value={k}>{TIPOS_ACT[k]}</option>)}
+        {['llamada', 'whatsapp', 'visita', 'videollamada', 'correo', 'nota'].map((k) => <option key={k} value={k}>{TIPOS_ACT[k]}</option>)}
       </select>
       <input type="text" value={texto} placeholder="¿Qué pasó? Ej.: pidió la cotización con roaming" onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && registrar()} />
       <button className="btn chico primario" onClick={registrar}>Registrar</button>

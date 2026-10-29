@@ -4,8 +4,8 @@ import { hoyISO } from './lib'
 
 export const ETAPAS = ['Prospecto', 'Contactado', 'Cotizado', 'Negociación', 'Ganado']
 export const CHIP_ETAPA = { Prospecto: 'gris', Contactado: 'azul', Cotizado: 'azul', Negociación: 'ambar', Ganado: 'verde', Perdido: 'rojo' }
-export const TIPOS_ACT = { llamada: 'Llamada', whatsapp: 'WhatsApp', visita: 'Visita', correo: 'Correo', cotizacion: 'Cotización', nota: 'Nota', etapa: 'Cambio de etapa', venta: 'Venta' }
-export const ICONO_ACT = { llamada: '☎', whatsapp: '✉', visita: '⌂', correo: '@', cotizacion: '▤', nota: '✎', etapa: '→', venta: '★' }
+export const TIPOS_ACT = { llamada: 'Llamada', whatsapp: 'WhatsApp', visita: 'Visita', videollamada: 'Videollamada', correo: 'Correo', cotizacion: 'Cotización', nota: 'Nota', etapa: 'Cambio de etapa', venta: 'Venta' }
+export const ICONO_ACT = { llamada: '☎', whatsapp: '✉', visita: '⌂', videollamada: '▶', correo: '@', cotizacion: '▤', nota: '✎', etapa: '→', venta: '★' }
 export const ORIGENES = ['Referido', 'WhatsApp', 'Página web', 'Visita en frío', 'Feria', 'Cliente antiguo', 'Redes sociales', 'Cotización']
 export const RUBROS = ['Transporte y logística', 'Agropecuario', 'Construcción', 'Distribución', 'Minería', 'Servicios', 'Particular', 'Otro']
 
