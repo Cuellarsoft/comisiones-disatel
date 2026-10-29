@@ -19,6 +19,9 @@ export default function FichaCliente({ id, onClose, onCambio }) {
   const [perder, setPerder] = useState(false)
   const [motivo, setMotivo] = useState('')
   const [vender, setVender] = useState(null)
+  const [borrar, setBorrar] = useState(false)
+  const [conCots, setConCots] = useState(false)
+  const [borrando, setBorrando] = useState(false)
 
   const cargar = useCallback(async () => {
     const [c, a, s, q, p] = await Promise.all([
@@ -64,6 +67,18 @@ export default function FichaCliente({ id, onClose, onCambio }) {
   async function reabrir() {
     try { await cambiarEtapa(c, 'Contactado', { motivo_perdida: null }); refrescar() } catch (e) { setErr(e.message) }
   }
+  async function eliminar() {
+    setErr(''); setBorrando(true)
+    try {
+      if (conCots) {
+        const ids = d.cots.filter((q) => q.estado !== 'Vendida').map((q) => q.id)
+        if (ids.length) { const { error } = await supabase.from('cotizaciones').delete().in('id', ids); if (error) throw error }
+      }
+      const { error } = await supabase.from('clientes').delete().eq('id', c.id)
+      if (error) throw error
+      onCambio?.(); onClose()
+    } catch (e) { setErr('No se pudo eliminar: ' + e.message); setBorrando(false) }
+  }
   function cotizar() {
     onClose()
     abrirCotizacion({
@@ -75,6 +90,7 @@ export default function FichaCliente({ id, onClose, onCambio }) {
   return (
     <Modal titulo={c.empresa} onClose={onClose} ancho className="crm-modal"
       pie={<>
+        {perfil.rol === 'admin' && <button className="btn izq" onClick={() => { setBorrar(true); setPerder(false) }}>Eliminar</button>}
         {!cerrado && <button className="btn peligro izq" onClick={() => setPerder(true)}>Marcar perdido</button>}
         {c.etapa === 'Perdido' && <button className="btn izq" onClick={reabrir}>Reabrir oportunidad</button>}
         {c.etapa === 'Ganado' && <button className="btn izq" onClick={() => { onClose(); ir('ventas') }}>Ver en Comisiones</button>}
@@ -90,6 +106,20 @@ export default function FichaCliente({ id, onClose, onCambio }) {
       <Error msg={err} />
       {ok && <div className="ok">{ok}</div>}
       {c.etapa === 'Perdido' && <div className="error">Perdido{c.motivo_perdida ? `: ${c.motivo_perdida}` : ''}</div>}
+      {borrar && (
+        <div className="error crm-borrar">
+          <b>¿Eliminar a {c.empresa}?</b>
+          <span>Se borran sus datos, su historial, sus seguimientos y su chat de WhatsApp. No se puede deshacer.</span>
+          {d.cots.length > 0 && (
+            <label className="check"><input type="checkbox" checked={conCots} onChange={(e) => setConCots(e.target.checked)} />
+              Borrar también {d.cots.length === 1 ? 'su cotización' : `sus ${d.cots.length} cotizaciones`}{d.cots.some((q) => q.estado === 'Vendida') ? ' (las vendidas se conservan por Comisiones)' : ''}. Si no lo marcas, quedan en el historial sin cliente.</label>
+          )}
+          <div className="crm-borrar-botones">
+            <button className="btn" onClick={() => setBorrar(false)}>Cancelar</button>
+            <button className="btn peligro" disabled={borrando} onClick={eliminar}>{borrando ? 'Eliminando…' : 'Eliminar definitivamente'}</button>
+          </div>
+        </div>
+      )}
       {perder && (
         <div className="nota crm-perder">
           <Campo label="¿Por qué se perdió?"><input type="text" value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Ej.: eligió a la competencia por precio" autoFocus /></Campo>

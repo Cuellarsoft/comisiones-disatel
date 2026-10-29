@@ -15,6 +15,7 @@ export default function ListaCotizaciones() {
   const [vend, setVend] = useState('todos')
   const [mes, setMes] = useState('todos')
   const [vender, setVender] = useState(null)
+  const [borrar, setBorrar] = useState(null)
   const [err, setErr] = useState('')
   const [ok, setOk] = useState('')
 
@@ -105,6 +106,7 @@ export default function ListaCotizaciones() {
                       <button className="btn chico" onClick={() => cambiarEstado(c, 'Perdida')}>Perdida</button>
                     </>}
                     {c.estado === 'Perdida' && <button className="btn chico" onClick={() => cambiarEstado(c, 'Enviada')}>Reabrir</button>}
+                    {admin && <button className="btn chico" title="Eliminar cotización" onClick={() => { setOk(''); setBorrar(c) }}>Eliminar</button>}
                   </div>
                 </td>
               </tr>
@@ -116,6 +118,8 @@ export default function ListaCotizaciones() {
         </table></div>
       </div>
 
+      {borrar && <BorrarCotizacion c={borrar} onClose={() => setBorrar(null)}
+        onDone={() => { setOk(`Se eliminó la cotización ${borrar.numero} de ${borrar.cliente}.`); setBorrar(null); cargar() }} />}
       {vender && <VenderModal c={vender} onClose={() => setVender(null)}
         onDone={(n) => { setVender(null); setOk(`Listo: se crearon ${n} ${n === 1 ? 'venta' : 'ventas'} en Comisiones con los datos de la cotización.`); cargar() }} />}
     </>
@@ -123,6 +127,25 @@ export default function ListaCotizaciones() {
 }
 
 // Pasa la cotización vendida a Comisiones: una venta por vehículo, con los precios cotizados
+function BorrarCotizacion({ c, onClose, onDone }) {
+  const [err, setErr] = useState('')
+  const [borrando, setBorrando] = useState(false)
+  async function eliminar() {
+    setErr(''); setBorrando(true)
+    const { error } = await supabase.from('cotizaciones').delete().eq('id', c.id)
+    if (error) { setErr('No se pudo eliminar: ' + error.message); setBorrando(false) } else onDone()
+  }
+  return (
+    <Modal titulo="Eliminar cotización" onClose={onClose}
+      pie={<><button className="btn" onClick={onClose}>Cancelar</button><button className="btn peligro" disabled={borrando} onClick={eliminar}>{borrando ? 'Eliminando…' : 'Eliminar definitivamente'}</button></>}>
+      <Error msg={err} />
+      <p style={{ marginTop: 0 }}>Vas a eliminar la cotización <b>{c.numero}</b> de <b>{c.cliente}</b> ({fdate(c.fecha)}, {c.unidades} {c.unidades === 1 ? 'vehículo' : 'vehículos'}). No se puede deshacer.</p>
+      {c.estado === 'Vendida' && <div className="nota">Esta cotización ya se vendió. Las ventas que generó en Comisiones se conservan; solo pierden el enlace a la cotización.</div>}
+      {c.cliente_id && <p className="crm-sub">El cliente sigue en el CRM; solo se quita esta cotización de su ficha.</p>}
+    </Modal>
+  )
+}
+
 export function VenderModal({ c, onClose, onDone }) {
   const { params, ir, configCot } = useApp()
   const cot = cotizar(c.datos || {}, configCot)

@@ -472,3 +472,8 @@ button.crm-etq b { font-weight: 700; opacity: .8; }
   .red-responder input { grid-column: 1 / -1; }
   .red-coment-txt, .red-resp { margin-left: 0; }
 }
+
+/* Confirmación para eliminar un cliente */
+.crm-borrar { display: grid; gap: 8px; }
+.crm-borrar .check { font-weight: 400; }
+.crm-borrar-botones { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
