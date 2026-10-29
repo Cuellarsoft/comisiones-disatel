@@ -4,8 +4,8 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4'
 
 const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
-const VERIFY_TOKEN = Deno.env.get('REDES_VERIFY_TOKEN') ?? ''
-const APP_SECRET = Deno.env.get('REDES_APP_SECRET') ?? ''
+const VERIFY_TOKEN = (Deno.env.get('REDES_VERIFY_TOKEN') ?? '').trim()
+const APP_SECRET = (Deno.env.get('REDES_APP_SECRET') ?? '').trim()
 const VER = Deno.env.get('REDES_GRAPH_VERSION') ?? 'v21.0'
 
 async function firmaValida(body: string, firma: string | null) {
@@ -150,7 +150,10 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('Método no permitido', { status: 405 })
 
   const body = await req.text()
-  if (!(await firmaValida(body, req.headers.get('x-hub-signature-256')))) return new Response('No autorizado', { status: 401 })
+  if (!(await firmaValida(body, req.headers.get('x-hub-signature-256')))) {
+    console.warn('firma rechazada', { hay_secreto: !!APP_SECRET, largo_secreto: APP_SECRET.length, hay_firma: !!req.headers.get('x-hub-signature-256') })
+    return new Response('No autorizado', { status: 401 })
+  }
   let data: any
   try { data = JSON.parse(body) } catch { return new Response('JSON inválido', { status: 400 }) }
 
