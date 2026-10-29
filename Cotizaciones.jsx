@@ -4,6 +4,7 @@ import { cotizar, normalizarConfig } from './tarifas'
 import { bsPdf, generarPdf } from './cotizacionPdf'
 import { fdate, hoyISO } from './lib'
 import { supabase } from './supabase'
+import { aBase64, whatsapp } from './crmLib'
 
 // N.º único: fecha, hora y las iniciales del vendedor (dos vendedores no chocan en el mismo minuto)
 const nuevoNumero = (nombre = '') => {
@@ -32,8 +33,10 @@ export default function Cotizaciones() {
   const soloLectura = abierta?.estado === 'Vendida'
   // Una cotización vendida conserva los precios con que se vendió; las demás usan la configuración vigente
   const cfg = useMemo(() => (soloLectura && abierta?.datos?.config ? normalizarConfig(abierta.datos.config) : configCot), [soloLectura, abierta, configCot])
+  const [clienteId, setClienteId] = useState(() => abierta?.cliente_id || cotAbrir?.cliente_id || null)
+  const [waDirecto, setWaDirecto] = useState(null) // número de WhatsApp conectado del vendedor (envío automático con el PDF)
   const [f, setF] = useState(() => {
-    if (!abierta) return VACIO
+    if (!abierta) return cotAbrir?.prefill ? { ...VACIO, ...cotAbrir.prefill } : VACIO
     const { config, ...form } = abierta.datos || {} // eslint-disable-line no-unused-vars
     return { ...VACIO, ...form }
   })
@@ -50,6 +53,10 @@ export default function Cotizaciones() {
   const ultimo = useRef({ clave: '', bytes: null })
 
   const cot = useMemo(() => cotizar(f, cfg), [f, cfg])
+  useEffect(() => {
+    supabase.from('wa_numeros').select('numero').eq('vendedor_id', perfil.id).eq('activo', true).limit(1)
+      .then(({ data }) => setWaDirecto(data?.[0]?.numero || null))
+  }, [perfil.id])
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
   const setAcc = (id, v) => setF((s) => ({ ...s, accesorios: { ...s.accesorios, [id]: v } }))
 
@@ -84,14 +91,16 @@ export default function Cotizaciones() {
 
   // Guarda o actualiza la cotización para verla en "Mis cotizaciones" y poder pasarla a Comisiones
   async function registrar(canal) {
-    if (soloLectura) return
-    const { error } = await supabase.from('cotizaciones').upsert({
-      numero, vendedor_id: abierta?.vendedor_id || perfil.id, fecha,
+    if (soloLectura) return { cliente_id: clienteId }
+    const { data, error } = await supabase.from('cotizaciones').upsert({
+      numero, vendedor_id: abierta?.vendedor_id || perfil.id, fecha, ...(clienteId ? { cliente_id: clienteId } : {}),
       cliente: f.cliente.trim(), atencion: f.atencion.trim() || null, telefono: f.telefono.trim() || null, email: f.email.trim() || null,
       tipo: f.tipo, unidades: cot.unidades, con_roaming: cot.conRoaming, datos: { ...f, config: cfg },
       total_inicial: cot.totalInicial, total_mensual: cot.totalMensual, enviada_por: canal,
-    }, { onConflict: 'numero' })
+    }, { onConflict: 'numero' }).select('id, cliente_id').single()
     if (error) throw new globalThis.Error('No se pudo guardar la cotización: ' + error.message)
+    if (data?.cliente_id) setClienteId(data.cliente_id)
+    return data
   }
 
   async function armarArchivo() {
@@ -107,7 +116,8 @@ export default function Cotizaciones() {
     setTimeout(() => URL.revokeObjectURL(a.href), 4000)
   }
 
-  async function accion(canal) {
+  async function accion(canalPedido) {
+    let canal = canalPedido
     const e = validar()
     setErr(e); setAviso(''); setFalta(''); setGuia(null)
     if (e) return
@@ -120,6 +130,22 @@ export default function Cotizaciones() {
       const texto = `Hola ${saludo}, le saluda ${perfil.nombre} de DISATEL. Le envío ${doc} N.º ${numero} de rastreo GPS para ${veh}. Quedo atento a cualquier consulta.`
       const asunto = `${f.presentacion ? 'Propuesta' : 'Cotización'} DISATEL N.º ${numero} - ${f.cliente.trim()}`
       const cuerpo = `Estimado(a) ${saludo}:\n\nAdjunto ${doc} N.º ${numero} de nuestro servicio de rastreo GPS y monitoreo para ${veh}.\n\nQuedo atento a cualquier consulta.\n\nSaludos cordiales,\n${perfil.nombre}\nDISATEL Bolivia${miTel.trim() ? '\n' + miTel.trim() : ''}`
+
+      // WhatsApp conectado: la plataforma envía el PDF directo desde el número del vendedor
+      if (waDirecto && (canal === 'whatsapp' || canal === 'ambos')) {
+        if (!f.telefono.trim()) throw new globalThis.Error('Escribe el WhatsApp del cliente para enviarle la propuesta.')
+        const fila = await registrar(canal === 'ambos' ? 'whatsapp y correo' : 'whatsapp')
+        const bytes = new Uint8Array(await file.arrayBuffer())
+        const r = await whatsapp({ accion: 'enviar', cliente_id: fila.cliente_id, texto, documento: { base64: aBase64(bytes), nombre: file.name, mime: 'application/pdf' } })
+        const envio = r.modo === 'plantilla'
+          ? `Enviado por WhatsApp desde +${waDirecto} con la plantilla de propuesta (el cliente no había escrito en las últimas 24 h).`
+          : `Enviado por WhatsApp desde +${waDirecto} con el PDF adjunto.`
+        if (canal === 'whatsapp') { setAviso(envio + ' Lo ves en la conversación del cliente.'); return }
+        setAviso(envio)
+        // En el celular el menú de compartir necesita un toque nuevo: el correo queda como segundo paso
+        if (esMovil()) { setFalta('email'); return }
+        canal = 'email' // falta el correo
+      }
 
       // Se guarda en paralelo para no demorar el menú de compartir del celular
       const guardado = registrar({ email: 'correo', ambos: 'whatsapp y correo' }[canal] || canal)
@@ -149,12 +175,12 @@ export default function Cotizaciones() {
       setGuia({ canal, file, texto, asunto, cuerpo })
       await guardado
     } catch (x) {
-      setErr('No se pudo preparar la cotización: ' + x.message)
+      setErr(x.message.startsWith('No se pudo') || x.message.startsWith('Escribe') ? x.message : 'No se pudo enviar la cotización: ' + x.message)
     } finally { setTrabajando(false) }
   }
 
   function nueva() {
-    setCotAbrir?.(null)
+    setCotAbrir?.(null); setClienteId(null)
     setF(VACIO); setNumero(nuevoNumero(perfil.nombre)); setFecha(hoyISO()); setErr(''); setAviso('')
   }
 
@@ -256,6 +282,7 @@ export default function Cotizaciones() {
                   <button className="btn oscuro chico" onClick={() => accion('email')}>Enviar por correo</button>
                 </div>
               )}
+              {waDirecto && <div className="cot-wa-directo">WhatsApp conectado: la propuesta se envía directo desde +{waDirecto}, con el PDF adjunto.</div>}
               <div className="cot-botones">
                 <button className="btn primario ambos" disabled={trabajando} onClick={() => accion('ambos')}>Enviar por WhatsApp y correo</button>
                 <button className="btn whatsapp" disabled={trabajando} onClick={() => accion('whatsapp')}>Enviar por WhatsApp</button>

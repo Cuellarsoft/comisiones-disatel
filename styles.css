@@ -291,3 +291,110 @@ textarea { resize: vertical; }
   .kpi .v { font-size: 21px; }
   .cab h1 { font-size: 20px; }
 }
+
+/* ---------- Clientes (CRM) */
+.inicio-opciones.tres { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.inicio-caja:has(.tres) { max-width: 1000px; }
+.cot-wa-directo { margin-top: 12px; font-size: 12.5px; color: var(--verde); background: var(--verde-suave); padding: 8px 10px; border-radius: 8px; }
+.crm-tablero { display: grid; grid-template-columns: repeat(5, minmax(220px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.crm-col { background: #e9ebed; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 380px; }
+.crm-col.ganado { background: var(--verde-suave); }
+.crm-col-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; padding: 2px 4px 6px; }
+.crm-col-cab b { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+.crm-col-cab span { font-size: 11.5px; color: var(--gris); font-variant-numeric: tabular-nums; text-align: right; }
+.crm-tarjeta { background: #fff; border-radius: 10px; padding: 12px; box-shadow: var(--sombra); border: 1px solid var(--linea); display: flex; flex-direction: column; gap: 4px; cursor: grab; }
+.crm-tarjeta:hover { border-color: #cfd3d6; }
+.crm-tarjeta:focus-visible { outline: 2px solid var(--rojo); }
+.crm-tarjeta-cab { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.crm-tarjeta b { font-size: 13.5px; }
+.crm-noleidos { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: #1f9e55; color: #fff; font-size: 11px; font-weight: 700; margin-left: 6px; }
+.crm-sub { display: block; font-size: 12px; color: var(--gris); }
+.crm-sub-in { font-size: 12px; color: var(--gris); }
+.crm-prox { display: inline-block; margin-top: 4px; font-size: 11.5px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: var(--azul-suave); color: var(--azul); }
+.crm-prox.hoy { background: var(--ambar-suave); color: var(--ambar); }
+.crm-prox.vencido { background: var(--rojo-suave); color: var(--rojo-osc); }
+.crm-prox.sin { background: #eef0f1; color: var(--gris); }
+.crm-vacia { border: 2px dashed #cfd3d6; border-radius: 10px; padding: 18px; text-align: center; color: var(--gris-claro); font-size: 12px; }
+.crm-vacia:empty { display: none; }
+.crm-perdidos { color: var(--gris); font-size: 12.5px; margin-top: 14px; }
+.crm-perdidos button { all: unset; cursor: pointer; text-decoration: underline; margin-left: 8px; }
+.crm-seg { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.crm-lista-seg { display: flex; flex-direction: column; }
+.crm-seg-fila { display: flex; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--linea); align-items: flex-start; }
+.crm-seg-fila:last-child { border-bottom: 0; }
+.crm-seg-fila input { width: 17px; height: 17px; margin-top: 2px; accent-color: var(--rojo); flex: none; }
+.crm-seg-txt { cursor: pointer; flex: 1; min-width: 0; }
+.crm-barras { display: grid; gap: 12px; }
+.crm-barra { display: grid; grid-template-columns: 110px 1fr auto; gap: 12px; align-items: center; font-size: 13px; }
+.crm-barra div { height: 12px; background: #eceef0; border-radius: 6px; overflow: hidden; }
+.crm-barra i { display: block; height: 100%; background: var(--rojo); border-radius: 6px; }
+.crm-barra b { font-size: 12.5px; }
+.crm-motivos { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; font-size: 13px; }
+.crm-motivos li { display: flex; justify-content: space-between; gap: 10px; }
+.crm-modal .modal { max-width: 1040px; }
+.crm-etapas { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+.crm-etapas button { flex: 1; min-width: 90px; border: 1px solid var(--linea); background: #fafbfb; padding: 8px 6px; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 6px; color: var(--grafito); }
+.crm-etapas button.paso { background: #fdecec; border-color: #f6c9cb; color: var(--rojo-osc); }
+.crm-etapas button.on { background: var(--rojo); border-color: var(--rojo); color: #fff; }
+.crm-etapas button:disabled { opacity: .5; cursor: default; }
+.crm-perder { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 14px; flex-wrap: wrap; }
+.crm-perder .campo { flex: 1; min-width: 220px; }
+.crm-ficha { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 24px; }
+.crm-datos dl { display: grid; grid-template-columns: 90px 1fr; gap: 8px 10px; margin: 0; font-size: 13px; }
+.crm-datos dt { color: var(--gris); font-weight: 600; font-size: 12px; }
+.crm-datos dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.crm-datos dd .sub { display: block; color: var(--gris); font-size: 12px; }
+.crm-ficha h4 { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--rojo); margin: 20px 0 8px; }
+.crm-tarea { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; padding: 4px 0; cursor: pointer; }
+.crm-tarea input { accent-color: var(--rojo); margin-top: 2px; }
+.crm-programar { display: grid; grid-template-columns: 140px 1fr auto; gap: 6px; margin-top: 10px; }
+.crm-cots { display: grid; gap: 6px; }
+.crm-cot { all: unset; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--linea); border-radius: 8px; font-size: 12.5px; }
+.crm-cot:hover { background: #fafafa; }
+.crm-pestanas { display: flex; gap: 4px; border-bottom: 1px solid var(--linea); margin-bottom: 14px; }
+.crm-pestanas button { all: unset; cursor: pointer; padding: 8px 14px; font-weight: 600; font-size: 13px; color: var(--gris); border-bottom: 2px solid transparent; margin-bottom: -1px; display: inline-flex; align-items: center; }
+.crm-pestanas button.on { color: var(--tinta); border-color: var(--rojo); }
+.crm-registrar { display: grid; grid-template-columns: 120px 1fr auto; gap: 6px; margin-bottom: 14px; }
+.crm-linea { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; max-height: 420px; overflow-y: auto; }
+.crm-linea li { display: grid; grid-template-columns: 30px 1fr; gap: 10px; font-size: 13px; }
+.crm-linea li.crm-sub { display: block; }
+.crm-linea li p { margin: 3px 0 0; color: var(--grafito); line-height: 1.45; }
+.crm-ico { width: 30px; height: 30px; border-radius: 50%; background: #eef0f1; display: grid; place-items: center; font-size: 13px; color: var(--grafito); }
+.t-cotizacion .crm-ico { background: var(--azul-suave); color: var(--azul); }
+.t-venta .crm-ico { background: var(--verde-suave); color: var(--verde); }
+.t-etapa .crm-ico { background: var(--rojo-suave); color: var(--rojo); }
+.t-whatsapp .crm-ico { background: #e6f4ec; color: #1f9e55; }
+/* Conversación de WhatsApp */
+.wa { display: flex; flex-direction: column; gap: 10px; }
+.wa-chat { background: #efeae2; border-radius: 10px; padding: 12px; height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.wa-fila-wrap { display: flex; flex-direction: column; }
+.wa-dia { align-self: center; background: #fff; color: var(--gris); font-size: 11px; padding: 3px 10px; border-radius: 8px; margin: 8px 0; text-transform: capitalize; }
+.wa-burbuja { max-width: 78%; padding: 7px 10px 5px; border-radius: 10px; font-size: 13px; box-shadow: 0 1px 1px rgba(0, 0, 0, .06); }
+.wa-burbuja.entra { align-self: flex-start; background: #fff; border-top-left-radius: 2px; }
+.wa-burbuja.sale { align-self: flex-end; background: #d9fdd3; border-top-right-radius: 2px; }
+.wa-burbuja p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.4; }
+.wa-burbuja .wa-tipo { color: var(--gris); font-style: italic; }
+.wa-meta { display: block; text-align: right; font-size: 10.5px; color: #667781; margin-top: 2px; }
+.wa-error { display: block; font-size: 11px; color: var(--rojo-osc); margin-top: 2px; }
+.wa-archivo { all: unset; cursor: pointer; display: block; background: rgba(0, 0, 0, .05); padding: 8px 10px; border-radius: 6px; margin-bottom: 4px; font-weight: 600; font-size: 12.5px; }
+.wa-escribir { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+.wa-escribir textarea { resize: none; }
+.wa-cerrada { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--ambar-suave); color: var(--ambar); padding: 10px 12px; border-radius: 8px; font-size: 12.5px; }
+.wa-config { display: grid; gap: 12px; }
+.wa-dato { display: grid; grid-template-columns: 150px 1fr auto; gap: 10px; align-items: center; font-size: 13px; }
+.wa-dato span { color: var(--gris); font-weight: 600; font-size: 12px; }
+.wa-dato code { background: #f4f5f6; padding: 6px 8px; border-radius: 6px; font-size: 12px; overflow-wrap: anywhere; }
+.wa-config h4 { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--rojo); margin: 8px 0 0; }
+.wa-plantilla { border: 1px solid var(--linea); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+.wa-plantilla p { margin: 6px 0 0; color: var(--grafito); }
+@media (max-width: 1100px) {
+  .crm-seg { grid-template-columns: minmax(0, 1fr); }
+  .crm-ficha { grid-template-columns: minmax(0, 1fr); }
+  .inicio-opciones.tres { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .crm-programar, .crm-registrar, .wa-dato { grid-template-columns: minmax(0, 1fr); }
+  .crm-barra { grid-template-columns: 90px 1fr; }
+  .crm-barra b { grid-column: 2; }
+  .wa-burbuja { max-width: 90%; }
+}

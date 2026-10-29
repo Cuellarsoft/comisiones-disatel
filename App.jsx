@@ -16,6 +16,8 @@ import Historial from './Historial'
 import Cotizaciones from './Cotizaciones'
 import ListaCotizaciones from './ListaCotizaciones'
 import ConfigCotizaciones from './ConfigCotizaciones'
+import { Embudo, Seguimientos as SeguimientosCrm, ListaClientes, PanelClientes } from './Clientes'
+import ConfigWhatsapp from './ConfigWhatsapp'
 import { CONFIG_BASE, normalizarConfig } from './tarifas'
 
 const COMISIONES_ADMIN = [
@@ -43,6 +45,13 @@ const COTIZACIONES = (admin) => [
   ...(admin ? [['sep', 'Configuración'], ['cot-config', 'Precios y condiciones', ConfigCotizaciones]] : []),
 ]
 
+const CLIENTES = (admin) => [
+  ['cli-embudo', 'Embudo de ventas', Embudo],
+  ['cli-seguimientos', 'Seguimientos', SeguimientosCrm],
+  ['cli-lista', admin ? 'Todos los clientes' : 'Mis clientes', ListaClientes],
+  ...(admin ? [['cli-panel', 'Panel del equipo', PanelClientes], ['sep', 'Configuración'], ['cli-whatsapp', 'WhatsApp', ConfigWhatsapp]] : []),
+]
+
 function Inicio({ perfil, ir, salir }) {
   return (
     <div className="inicio">
@@ -50,7 +59,14 @@ function Inicio({ perfil, ir, salir }) {
         <img src={logo} alt="Disatel" className="inicio-logo" />
         <div className="inicio-tit">Departamento de Ventas</div>
         <h1>Hola, {perfil.nombre.split(' ')[0]}. ¿Qué quieres hacer?</h1>
-        <div className="inicio-opciones">
+        <div className="inicio-opciones tres">
+          <button className="opcion" onClick={() => ir('cli-embudo')}>
+            <span className="op-icono" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5" /><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.9 2.7 2.6 3 5.2" /></svg>
+            </span>
+            <b>Clientes</b>
+            <span>{perfil.rol === 'admin' ? 'Prospectos, seguimientos, WhatsApp y el embudo del equipo.' : 'Tus prospectos, seguimientos y conversaciones de WhatsApp.'}</span>
+          </button>
           <button className="opcion" onClick={() => ir('cot-nueva')}>
             <span className="op-icono" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M9 13h6M9 17h4" /></svg>
@@ -130,8 +146,8 @@ export default function App() {
   const admin = perfil.rol === 'admin'
   if (pag === 'inicio') return <Inicio perfil={perfil} ir={ir} salir={salir} />
 
-  const enCot = pag.startsWith('cot-')
-  const menu = enCot ? COTIZACIONES(admin) : admin ? COMISIONES_ADMIN : COMISIONES_VENDEDOR
+  const area = pag.startsWith('cot-') ? 'cot' : pag.startsWith('cli-') ? 'cli' : 'com'
+  const menu = area === 'cot' ? COTIZACIONES(admin) : area === 'cli' ? CLIENTES(admin) : admin ? COMISIONES_ADMIN : COMISIONES_VENDEDOR
   const actual = menu.find((m) => m[0] === pag && m[2]) || menu[0]
   const Pagina = actual[2]
   const abrirCotizacion = (c) => { setCotAbrir(c); ir('cot-nueva') }
@@ -142,7 +158,7 @@ export default function App() {
         <aside className="side no-print">
           <div className="marca">
             <img src={logo} alt="Disatel" />
-            <small>{enCot ? 'Cotizaciones' : 'Comisiones'}</small>
+            <small>{{ cot: 'Cotizaciones', cli: 'Clientes', com: 'Comisiones' }[area]}</small>
           </div>
           <nav>
             <button className="volver" onClick={() => ir('inicio')}>← Inicio</button>
@@ -156,7 +172,7 @@ export default function App() {
           </div>
         </aside>
         <main className="main">
-          <Pagina key={actual[0] + (actual[0] === 'cot-nueva' ? (cotAbrir?.id || 'n') : '')} />
+          <Pagina key={actual[0] + (actual[0] === 'cot-nueva' ? (cotAbrir?.id || (cotAbrir?.cliente_id ? 'c' + cotAbrir.cliente_id : 'n')) : '')} />
         </main>
       </div>
     </Ctx.Provider>
