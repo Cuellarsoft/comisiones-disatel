@@ -170,6 +170,15 @@ Deno.serve(async (req) => {
         }
         console.log('revision', c.plataforma, c.cuenta_id, JSON.stringify({
           hay_clave: !!tok, largo_clave: tok.length, suscripcion,
+          clave: await (async () => {
+            const appId = Deno.env.get('REDES_APP_ID') ?? '2183004645935768'
+            try {
+              const r = await fetch(`https://graph.facebook.com/${VER}/debug_token?input_token=${encodeURIComponent(tok)}&access_token=${appId}|${APP_SECRET}`)
+              const j = await r.json()
+              const x = j.data ?? {}
+              return j.error ? { error: j.error.message } : { tipo: x.type, valida: x.is_valid, vence: x.expires_at, permisos: x.scopes, pagina: x.profile_id }
+            } catch (e) { return { fallo: String(e) } }
+          })(),
           yo: await ver('me?fields=id,name'),
           apps: await ver(`${c.cuenta_id}/subscribed_apps`),
           conversaciones: await ver(`${c.cuenta_id}/conversations?limit=1&fields=updated_time`),
