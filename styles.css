@@ -268,6 +268,31 @@ textarea { resize: vertical; }
 .cfg-pie { display: flex; justify-content: flex-end; margin-top: 18px; }
 @media (max-width: 1100px) { .cfg-planes { grid-template-columns: minmax(0, 1fr); } }
 
+/* ---------- Etiquetas */
+.crm-etiquetas { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.crm-etq { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #eef0f1; color: var(--grafito); border: 1px solid transparent; white-space: nowrap; }
+.crm-etq.c-rojo { background: var(--rojo-suave); color: var(--rojo-osc); }
+.crm-etq.c-ambar { background: var(--ambar-suave); color: var(--ambar); }
+.crm-etq.c-verde { background: var(--verde-suave); color: var(--verde); }
+.crm-etq.c-azul { background: var(--azul-suave); color: var(--azul); }
+.crm-etq.c-morado { background: #f1ebfa; color: #6b3fa0; }
+button.crm-etq { cursor: pointer; font: inherit; font-size: 12px; font-weight: 600; padding: 5px 11px; opacity: .75; }
+button.crm-etq:hover { opacity: 1; }
+button.crm-etq.on { opacity: 1; border-color: currentColor; box-shadow: 0 0 0 1px currentColor inset; }
+button.crm-etq b { font-weight: 700; opacity: .8; }
+.etq-filtro { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; padding: 12px 14px; background: var(--blanco); border: 1px solid var(--linea); border-radius: var(--radio); }
+.etq-filtro-fila { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.etq-grupo-nom { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--gris); min-width: 76px; }
+.etq-limpiar { all: unset; cursor: pointer; align-self: flex-start; font-size: 12px; color: var(--rojo-osc); text-decoration: underline; text-underline-offset: 3px; }
+.etq-elegir { display: grid; gap: 8px; }
+.etq-grupo { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+.etq-grupo > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.etq-agregar { all: unset; cursor: pointer; font-size: 12.5px; color: var(--azul); text-decoration: underline; text-underline-offset: 3px; }
+.etq-nueva { display: grid; grid-template-columns: 180px 1fr 120px auto; gap: 8px; }
+.etq-fila { display: flex; align-items: center; gap: 10px; }
+.etq-fila input { max-width: 220px; }
+@media (max-width: 760px) { .etq-nueva { grid-template-columns: minmax(0, 1fr); } .etq-grupo-nom { min-width: 0; width: 100%; } }
+
 /* ---------- Responsive */
 @media (max-width: 1100px) {
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }

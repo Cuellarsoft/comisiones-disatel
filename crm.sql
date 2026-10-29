@@ -26,6 +26,8 @@ create table if not exists public.clientes (
   etapa text not null default 'Prospecto' check (etapa in ('Prospecto', 'Contactado', 'Cotizado', 'Negociación', 'Ganado', 'Perdido')),
   motivo_perdida text,
   notas text,
+  etiquetas bigint[] not null default '{}',       -- etiquetas para clasificar (producto, tamaño, etc.)
+  valor_estimado numeric,                          -- valor mensual estimado; vacío = se calcula con el tarifario de GPS vehicular
   wa_no_leidos int not null default 0,
   wa_ultimo_at timestamptz,
   created_at timestamptz not null default now(),
@@ -33,6 +35,28 @@ create table if not exists public.clientes (
 );
 create index if not exists clientes_vendedor_idx on public.clientes (vendedor_id);
 create index if not exists clientes_tel_idx on public.clientes (telefono_wa);
+
+-- Etiquetas para clasificar clientes, agrupadas (Producto, Tamaño, ...). Las administra el administrador.
+create table if not exists public.etiquetas (
+  id bigint generated always as identity primary key,
+  grupo text not null default 'General',
+  nombre text not null,
+  color text not null default 'gris',
+  de_cotizacion boolean not null default false,  -- se pone sola a los clientes que reciben una cotización
+  activo boolean not null default true,
+  orden int not null default 0,
+  created_at timestamptz not null default now(),
+  unique (grupo, nombre)
+);
+insert into public.etiquetas (grupo, nombre, color, de_cotizacion, orden) values
+  ('Producto', 'GPS vehicular', 'rojo', true, 1),
+  ('Producto', 'GPS ganado', 'verde', false, 2),
+  ('Producto', 'Starlink', 'azul', false, 3),
+  ('Tamaño', 'Pequeño (1 a 5)', 'gris', false, 4),
+  ('Tamaño', 'Mediano (6 a 20)', 'ambar', false, 5),
+  ('Tamaño', 'Grande (21 o más)', 'morado', false, 6)
+on conflict (grupo, nombre) do nothing;
+create index if not exists clientes_etiquetas_idx on public.clientes using gin (etiquetas);
 
 create table if not exists public.actividades (
   id bigint generated always as identity primary key,
@@ -127,8 +151,9 @@ begin
     order by id limit 1;
   end if;
   if v_id is null then
-    insert into public.clientes (vendedor_id, empresa, contacto, telefono, email, tipo, flota, origen, etapa)
-    values (new.vendedor_id, new.cliente, nullif(new.atencion, ''), new.telefono, new.email, new.tipo, new.unidades, 'Cotización', 'Prospecto')
+    insert into public.clientes (vendedor_id, empresa, contacto, telefono, email, tipo, flota, origen, etapa, etiquetas)
+    values (new.vendedor_id, new.cliente, nullif(new.atencion, ''), new.telefono, new.email, new.tipo, new.unidades, 'Cotización', 'Prospecto',
+            coalesce((select array_agg(id) from public.etiquetas where de_cotizacion and activo), '{}'))
     returning id into v_id;
   end if;
   new.cliente_id := v_id;
@@ -145,6 +170,9 @@ begin
   if new.cliente_id is null or new.estado <> 'Enviada' then return new; end if;
   update public.clientes set etapa = 'Cotizado'
   where id = new.cliente_id and etapa in ('Prospecto', 'Contactado');
+  -- La cotización es de GPS vehicular: se agregan las etiquetas "de cotización" si el cliente no las tenía
+  update public.clientes c set etiquetas = array(select distinct x from unnest(c.etiquetas || coalesce((select array_agg(id) from public.etiquetas where de_cotizacion and activo), '{}')) x)
+  where c.id = new.cliente_id;
   insert into public.actividades (cliente_id, vendedor_id, tipo, texto)
   values (new.cliente_id, new.vendedor_id, 'cotizacion',
     'Cotización ' || new.numero || ' enviada' || coalesce(' por ' || new.enviada_por, '') || ' · ' || new.unidades ||
@@ -203,6 +231,7 @@ alter table public.clientes enable row level security;
 alter table public.actividades enable row level security;
 alter table public.seguimientos enable row level security;
 alter table public.wa_numeros enable row level security;
+alter table public.etiquetas enable row level security;
 alter table public.wa_mensajes enable row level security;
 
 create or replace function public.es_mi_cliente(p bigint) returns boolean
@@ -225,6 +254,10 @@ create policy seg_all on public.seguimientos for all to authenticated
 -- Los mensajes solo se leen desde la web; los escribe el servidor
 drop policy if exists wam_sel on public.wa_mensajes;
 create policy wam_sel on public.wa_mensajes for select to authenticated using (public.es_mi_cliente(cliente_id));
+drop policy if exists etq_sel on public.etiquetas;
+create policy etq_sel on public.etiquetas for select to authenticated using (true);
+drop policy if exists etq_adm on public.etiquetas;
+create policy etq_adm on public.etiquetas for all to authenticated using (public.is_admin()) with check (public.is_admin());
 drop policy if exists wan_sel on public.wa_numeros;
 create policy wan_sel on public.wa_numeros for select to authenticated using (true);
 drop policy if exists wan_adm on public.wa_numeros;

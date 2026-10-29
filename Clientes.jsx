@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
 import { Cabecera, Cargando, Error, Kpi, useApp } from './ui'
 import { bs0, fdate, hoyISO } from './lib'
-import { CHIP_ETAPA, ETAPAS, cambiarEtapa, estadoSeg, masDiasISO, valorMensual } from './crmLib'
+import { CHIP_ETAPA, ETAPAS, cambiarEtapa, estadoSeg, guardarFiltroEtiquetas, leerFiltroEtiquetas, masDiasISO, pasaFiltroEtiquetas, valorMensual } from './crmLib'
+import { EtiquetasCliente, FiltroEtiquetas } from './Etiquetas'
 import FichaCliente, { NuevoCliente } from './FichaCliente'
 
 // Datos comunes del módulo: clientes visibles para el usuario y sus seguimientos pendientes
@@ -20,6 +21,15 @@ function useCrm() {
   }, [])
   useEffect(() => { cargar() }, [cargar])
   return { d, err, cargar }
+}
+
+// Filtro por etiquetas compartido entre Embudo, Seguimientos y la lista
+function useFiltroEtiquetas() {
+  const { etiquetasTodas } = useApp()
+  const [sel, setSelIn] = useState(leerFiltroEtiquetas)
+  const setSel = (v) => { setSelIn(v); guardarFiltroEtiquetas(v) }
+  const valido = sel.filter((id) => etiquetasTodas.some((e) => e.id === id))
+  return { sel: valido, setSel, pasa: (c) => pasaFiltroEtiquetas(c, valido, etiquetasTodas) }
 }
 
 function FiltroVendedor({ perfiles, vend, setVend }) {
@@ -53,12 +63,14 @@ function usarModales(cargar) {
 export function Embudo() {
   const { configCot } = useApp()
   const { d, err, cargar } = useCrm()
+  const filtro = useFiltroEtiquetas()
   const [vend, setVend] = useState('todos')
   const [arrastrando, setArrastrando] = useState(null)
   const [aviso, setAviso] = useState('')
   const { abrir, nuevo, modales } = usarModales(cargar)
   if (!d) return <Cargando />
-  const clientes = d.clientes.filter((c) => vend === 'todos' || c.vendedor_id === vend)
+  const delVendedor = d.clientes.filter((c) => vend === 'todos' || c.vendedor_id === vend)
+  const clientes = delVendedor.filter(filtro.pasa)
   const proximo = (id) => d.segs.find((s) => s.cliente_id === id)
   const abiertos = clientes.filter((c) => !['Ganado', 'Perdido'].includes(c.etapa))
   const nombre = (id) => d.perfiles.find((p) => p.id === id)?.nombre || ''
@@ -78,6 +90,7 @@ export function Embudo() {
         <button className="btn primario" onClick={nuevo}>+ Nuevo prospecto</button>
       </Cabecera>
       <Error msg={err} />
+      <FiltroEtiquetas clientes={delVendedor} sel={filtro.sel} setSel={filtro.setSel} />
       {aviso && <div className="nota" style={{ marginBottom: 14 }}>{aviso}</div>}
       <div className="crm-tablero">
         {ETAPAS.map((e) => {
@@ -90,11 +103,12 @@ export function Embudo() {
                   onKeyDown={(ev) => ev.key === 'Enter' && abrir(c.id)}>
                   <div className="crm-tarjeta-cab"><b>{c.empresa}</b>{c.wa_no_leidos > 0 && <span className="crm-noleidos" title="Mensajes de WhatsApp sin leer">{c.wa_no_leidos}</span>}</div>
                   <span className="crm-sub">{c.flota} {c.flota === 1 ? 'vehículo' : 'vehículos'} · {c.tipo === 'empresa' ? 'Empresa' : 'Personal'} · {bs0(valorMensual(c, configCot))}/mes</span>
+                  <EtiquetasCliente ids={c.etiquetas} />
                   {vend === 'todos' && d.perfiles.length > 1 && <span className="crm-sub">{nombre(c.vendedor_id)}</span>}
                   {e !== 'Ganado' && <ChipSeguimiento s={proximo(c.id)} />}
                 </div>
               ))}
-              {!cs.length && <div className="crm-vacia">{d.clientes.length ? 'Arrastra aquí' : e === 'Prospecto' ? 'Agrega tu primer prospecto' : ''}</div>}
+              {!cs.length && <div className="crm-vacia">{d.clientes.length ? (filtro.sel.length ? 'Ninguno con estas etiquetas' : 'Arrastra aquí') : e === 'Prospecto' ? 'Agrega tu primer prospecto' : ''}</div>}
             </div>
           )
         })}
@@ -110,11 +124,13 @@ export function Embudo() {
 // ---------- Seguimientos
 export function Seguimientos() {
   const { d, err, cargar } = useCrm()
+  const filtro = useFiltroEtiquetas()
   const [vend, setVend] = useState('todos')
   const { abrir, modales } = usarModales(cargar)
   if (!d) return <Cargando />
   const cli = (id) => d.clientes.find((c) => c.id === id)
-  const pend = d.segs.filter((s) => cli(s.cliente_id) && (vend === 'todos' || cli(s.cliente_id).vendedor_id === vend))
+  const delVendedor = d.clientes.filter((c) => vend === 'todos' || c.vendedor_id === vend)
+  const pend = d.segs.filter((s) => cli(s.cliente_id) && (vend === 'todos' || cli(s.cliente_id).vendedor_id === vend) && filtro.pasa(cli(s.cliente_id)))
   const hoy = hoyISO()
   const grupos = [
     ['Vencidos', pend.filter((s) => s.fecha < hoy), 'rojo'],
@@ -135,6 +151,7 @@ export function Seguimientos() {
       <Cabecera titulo="Seguimientos" sub="Lo que hay que hacer con cada cliente. Al enviar una cotización se agenda solo un seguimiento a 3 días.">
         <FiltroVendedor perfiles={d.perfiles} vend={vend} setVend={setVend} />
       </Cabecera>
+      <FiltroEtiquetas clientes={delVendedor} sel={filtro.sel} setSel={filtro.setSel} />
       <Error msg={err} />
       <div className="grid crm-seg">
         {grupos.map(([t, xs, tono]) => (
@@ -172,10 +189,11 @@ export function ListaClientes() {
   const [vend, setVend] = useState('todos')
   const [q, setQ] = useState('')
   const [etapa, setEtapa] = useState('todas')
+  const filtro = useFiltroEtiquetas()
   const { abrir, nuevo, modales } = usarModales(cargar)
-  const fil = useMemo(() => (d?.clientes || []).filter((c) =>
-    (vend === 'todos' || c.vendedor_id === vend) && (etapa === 'todas' || c.etapa === etapa) &&
-    (!q || [c.empresa, c.contacto, c.telefono, c.rubro, c.email].join(' ').toLowerCase().includes(q.toLowerCase()))), [d, vend, etapa, q])
+  const delVendedor = (d?.clientes || []).filter((c) => vend === 'todos' || c.vendedor_id === vend)
+  const fil = useMemo(() => delVendedor.filter((c) => filtro.pasa(c) && (etapa === 'todas' || c.etapa === etapa) &&
+    (!q || [c.empresa, c.contacto, c.telefono, c.rubro, c.email].join(' ').toLowerCase().includes(q.toLowerCase()))), [d, vend, etapa, q, filtro.sel]) // eslint-disable-line react-hooks/exhaustive-deps
   if (!d) return <Cargando />
   const proximo = (id) => d.segs.find((s) => s.cliente_id === id)
   const nombre = (id) => d.perfiles.find((p) => p.id === id)?.nombre || '—'
@@ -187,6 +205,7 @@ export function ListaClientes() {
         <button className="btn primario" onClick={nuevo}>+ Nuevo prospecto</button>
       </Cabecera>
       <Error msg={err} />
+      <FiltroEtiquetas clientes={delVendedor} sel={filtro.sel} setSel={filtro.setSel} />
       <div className="card">
         <div className="filtros">
           <input type="text" placeholder="Buscar empresa, contacto, teléfono, correo o rubro" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -199,7 +218,7 @@ export function ListaClientes() {
           <tbody>
             {fil.map((c) => (
               <tr key={c.id} className="click" onClick={() => abrir(c.id)}>
-                <td><b>{c.empresa}</b>{c.wa_no_leidos > 0 && <span className="crm-noleidos">{c.wa_no_leidos}</span>}<span className="sub">{[c.contacto !== c.empresa ? c.contacto : null, c.telefono].filter(Boolean).join(' · ')}</span></td>
+                <td><b>{c.empresa}</b>{c.wa_no_leidos > 0 && <span className="crm-noleidos">{c.wa_no_leidos}</span>}<span className="sub">{[c.contacto !== c.empresa ? c.contacto : null, c.telefono].filter(Boolean).join(' · ')}</span><EtiquetasCliente ids={c.etiquetas} /></td>
                 <td>{c.rubro || '—'}<span className="sub">{c.origen}</span></td>
                 <td className="r num">{c.flota}</td>
                 <td className="r num">{bs0(valorMensual(c, configCot))}</td>
@@ -208,7 +227,7 @@ export function ListaClientes() {
                 {admin && <td>{nombre(c.vendedor_id)}</td>}
               </tr>
             ))}
-            {!fil.length && <tr><td colSpan={admin ? 7 : 6} className="vacio">{d.clientes.length ? 'Ningún cliente coincide con la búsqueda.' : 'Todavía no hay clientes. Se agregan solos al enviar cotizaciones o al recibir un WhatsApp, o con “Nuevo prospecto”.'}</td></tr>}
+            {!fil.length && <tr><td colSpan={admin ? 7 : 6} className="vacio">{d.clientes.length ? 'Ningún cliente coincide con la búsqueda o las etiquetas.' : 'Todavía no hay clientes. Se agregan solos al enviar cotizaciones o al recibir un WhatsApp, o con “Nuevo prospecto”.'}</td></tr>}
           </tbody>
         </table></div>
       </div>

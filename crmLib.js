@@ -9,7 +9,26 @@ export const ICONO_ACT = { llamada: '☎', whatsapp: '✉', visita: '⌂', corre
 export const ORIGENES = ['Referido', 'WhatsApp', 'Página web', 'Visita en frío', 'Feria', 'Cliente antiguo', 'Redes sociales', 'Cotización']
 export const RUBROS = ['Transporte y logística', 'Agropecuario', 'Construcción', 'Distribución', 'Minería', 'Servicios', 'Particular', 'Otro']
 
-export const valorMensual = (c, cfg) => cotizar({ tipo: c.tipo, unidades: c.flota, conRoaming: 0, accesorios: {} }, cfg).totalMensual
+// Valor mensual: el estimado que cargó el vendedor o, si no hay, el del tarifario de GPS vehicular
+export function valorMensual(c, cfg) {
+  if (c.valor_estimado != null && c.valor_estimado !== '') return Number(c.valor_estimado)
+  return cotizar({ tipo: c.tipo, unidades: c.flota, conRoaming: 0, accesorios: {} }, cfg).totalMensual
+}
+
+// Filtro por etiquetas (se recuerda entre pantallas). Dentro de un grupo basta una; entre grupos, todas.
+export const leerFiltroEtiquetas = () => { try { return JSON.parse(localStorage.getItem('crm_etiquetas') || '[]') } catch { return [] } }
+export const guardarFiltroEtiquetas = (v) => { try { localStorage.setItem('crm_etiquetas', JSON.stringify(v)) } catch { /* sin almacenamiento */ } }
+export function pasaFiltroEtiquetas(c, sel, etiquetas) {
+  if (!sel.length) return true
+  const propias = new Set(c.etiquetas || [])
+  const porGrupo = {}
+  for (const id of sel) {
+    const g = etiquetas.find((e) => e.id === id)?.grupo ?? '?'
+    ;(porGrupo[g] ||= []).push(id)
+  }
+  return Object.values(porGrupo).every((ids) => ids.some((id) => propias.has(id)))
+}
+
 export const masDiasISO = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10) }
 
 export function estadoSeg(fecha) {

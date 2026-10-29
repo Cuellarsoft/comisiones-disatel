@@ -18,6 +18,7 @@ import ListaCotizaciones from './ListaCotizaciones'
 import ConfigCotizaciones from './ConfigCotizaciones'
 import { Embudo, Seguimientos as SeguimientosCrm, ListaClientes, PanelClientes } from './Clientes'
 import ConfigWhatsapp from './ConfigWhatsapp'
+import ConfigEtiquetas from './Etiquetas'
 import { CONFIG_BASE, normalizarConfig } from './tarifas'
 
 const COMISIONES_ADMIN = [
@@ -49,7 +50,7 @@ const CLIENTES = (admin) => [
   ['cli-embudo', 'Embudo de ventas', Embudo],
   ['cli-seguimientos', 'Seguimientos', SeguimientosCrm],
   ['cli-lista', admin ? 'Todos los clientes' : 'Mis clientes', ListaClientes],
-  ...(admin ? [['cli-panel', 'Panel del equipo', PanelClientes], ['sep', 'Configuración'], ['cli-whatsapp', 'WhatsApp', ConfigWhatsapp]] : []),
+  ...(admin ? [['cli-panel', 'Panel del equipo', PanelClientes], ['sep', 'Configuración'], ['cli-etiquetas', 'Etiquetas', ConfigEtiquetas], ['cli-whatsapp', 'WhatsApp', ConfigWhatsapp]] : []),
 ]
 
 function Inicio({ perfil, ir, salir }) {
@@ -95,6 +96,7 @@ export default function App() {
   const [pag, setPag] = useState(() => location.hash.slice(1) || 'inicio')
   const [cotAbrir, setCotAbrir] = useState(null)
   const [configCot, setConfigCot] = useState(CONFIG_BASE)
+  const [etiquetasTodas, setEtiquetasTodas] = useState([])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -107,6 +109,11 @@ export default function App() {
     setConfigCot(normalizarConfig(data?.datos))
   }, [])
 
+  const cargarEtiquetas = useCallback(async () => {
+    const { data } = await supabase.from('etiquetas').select('*').order('orden').order('id')
+    setEtiquetasTodas(data || [])
+  }, [])
+
   const cargarParams = useCallback(async () => {
     const { data } = await supabase.from('parametros').select('*').eq('id', 1).single()
     setParams(data)
@@ -117,7 +124,8 @@ export default function App() {
     supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle().then(({ data }) => setPerfil(data || null))
     cargarParams()
     cargarConfigCot()
-  }, [session?.user?.id, cargarParams, cargarConfigCot])
+    cargarEtiquetas()
+  }, [session?.user?.id, cargarParams, cargarConfigCot, cargarEtiquetas])
 
   useEffect(() => {
     const h = () => setPag(location.hash.slice(1) || 'inicio')
@@ -153,7 +161,7 @@ export default function App() {
   const abrirCotizacion = (c) => { setCotAbrir(c); ir('cot-nueva') }
 
   return (
-    <Ctx.Provider value={{ perfil, params, cargarParams, ir, cotAbrir, setCotAbrir, abrirCotizacion, configCot, cargarConfigCot }}>
+    <Ctx.Provider value={{ perfil, params, cargarParams, ir, cotAbrir, setCotAbrir, abrirCotizacion, configCot, cargarConfigCot, etiquetasTodas, etiquetas: etiquetasTodas.filter((e) => e.activo), cargarEtiquetas }}>
       <div className="app">
         <aside className="side no-print">
           <div className="marca">

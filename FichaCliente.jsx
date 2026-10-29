@@ -4,6 +4,7 @@ import { Campo, Cargando, Error, Modal, useApp } from './ui'
 import { bs, bs0, fdate } from './lib'
 import { ETAPAS, ICONO_ACT, ORIGENES, RUBROS, TIPOS_ACT, cambiarEtapa, masDiasISO, registrarActividad, valorMensual, whatsapp } from './crmLib'
 import { VenderModal } from './ListaCotizaciones'
+import { ElegirEtiquetas, EtiquetasCliente } from './Etiquetas'
 
 const hora = (iso) => new Date(iso).toLocaleString('es-BO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 
@@ -102,11 +103,12 @@ export default function FichaCliente({ id, onClose, onCambio }) {
             ? <EditarCliente c={c} onCancel={() => setEditar(false)} onSaved={() => { setEditar(false); refrescar() }} />
             : <>
               <dl>
+                <dt>Etiquetas</dt><dd>{(c.etiquetas || []).length ? <EtiquetasCliente ids={c.etiquetas} /> : <button className="etq-agregar" onClick={() => setEditar(true)}>+ Agregar etiquetas</button>}</dd>
                 <dt>Contacto</dt><dd>{c.contacto || '—'}{c.cargo && <span className="sub">{c.cargo}</span>}</dd>
                 <dt>WhatsApp</dt><dd>{c.telefono || '—'}</dd>
                 <dt>Correo</dt><dd>{c.email || '—'}</dd>
                 <dt>Tipo</dt><dd>{c.tipo === 'empresa' ? 'Empresa' : 'Personal'}{c.rubro ? ` · ${c.rubro}` : ''}</dd>
-                <dt>Flota</dt><dd>{c.flota} {c.flota === 1 ? 'vehículo' : 'vehículos'} · {bs0(valorMensual(c, configCot))}/mes estimado</dd>
+                <dt>Flota</dt><dd>{c.flota} {c.flota === 1 ? 'vehículo' : 'vehículos'} · {bs0(valorMensual(c, configCot))}/mes {c.valor_estimado != null ? 'estimado por el vendedor' : 'estimado'}</dd>
                 <dt>Origen</dt><dd>{c.origen || '—'}</dd>
                 {perfil.rol === 'admin' && <><dt>Vendedor</dt><dd>{nombre(c.vendedor_id)}</dd></>}
                 <dt>Desde</dt><dd>{fdate(c.created_at)}</dd>
@@ -290,24 +292,29 @@ function Conversacion({ c, onLeido }) {
 }
 
 function EditarCliente({ c, onCancel, onSaved }) {
-  const [f, setF] = useState({ empresa: c.empresa, contacto: c.contacto || '', cargo: c.cargo || '', telefono: c.telefono || '', email: c.email || '', tipo: c.tipo, flota: c.flota, rubro: c.rubro || '', origen: c.origen || '', notas: c.notas || '' })
+  const [f, setF] = useState({ empresa: c.empresa, contacto: c.contacto || '', cargo: c.cargo || '', telefono: c.telefono || '', email: c.email || '', tipo: c.tipo, flota: c.flota, rubro: c.rubro || '', origen: c.origen || '', notas: c.notas || '', etiquetas: c.etiquetas || [], valor_estimado: c.valor_estimado ?? '' })
   const [err, setErr] = useState('')
   const set = (k) => (e) => setF((x) => ({ ...x, [k]: e.target.value }))
   async function guardar() {
     if (!f.empresa.trim()) return setErr('El nombre es obligatorio.')
-    const { error } = await supabase.from('clientes').update({ ...f, empresa: f.empresa.trim(), flota: Math.max(1, Number(f.flota) || 1) }).eq('id', c.id)
+    const { error } = await supabase.from('clientes').update({
+      ...f, empresa: f.empresa.trim(), flota: Math.max(1, Number(f.flota) || 1),
+      valor_estimado: f.valor_estimado === '' ? null : Math.max(0, Number(f.valor_estimado) || 0),
+    }).eq('id', c.id)
     error ? setErr(error.message) : onSaved()
   }
   return (
     <div className="form">
       <Error msg={err} />
       <Campo label="Empresa o nombre" full><input type="text" value={f.empresa} onChange={set('empresa')} /></Campo>
+      <Campo label="Etiquetas" full><ElegirEtiquetas valor={f.etiquetas} onChange={(v) => setF((x) => ({ ...x, etiquetas: v }))} /></Campo>
       <Campo label="Contacto"><input type="text" value={f.contacto} onChange={set('contacto')} /></Campo>
       <Campo label="Cargo"><input type="text" value={f.cargo} onChange={set('cargo')} /></Campo>
       <Campo label="WhatsApp"><input type="text" value={f.telefono} onChange={set('telefono')} /></Campo>
       <Campo label="Correo"><input type="email" value={f.email} onChange={set('email')} /></Campo>
       <Campo label="Tipo"><select value={f.tipo} onChange={set('tipo')}><option value="empresa">Empresa</option><option value="personal">Personal</option></select></Campo>
-      <Campo label="Vehículos"><input type="number" min="1" value={f.flota} onChange={set('flota')} /></Campo>
+      <Campo label="Unidades" ayuda="Vehículos, animales o equipos"><input type="number" min="1" value={f.flota} onChange={set('flota')} /></Campo>
+      <Campo label="Valor mensual estimado (Bs)" ayuda="Vacío: se calcula con el tarifario de GPS vehicular"><input type="number" min="0" value={f.valor_estimado} onChange={set('valor_estimado')} /></Campo>
       <Campo label="Rubro"><select value={f.rubro} onChange={set('rubro')}><option value="">—</option>{RUBROS.map((r) => <option key={r}>{r}</option>)}</select></Campo>
       <Campo label="Origen"><select value={f.origen} onChange={set('origen')}><option value="">—</option>{ORIGENES.map((r) => <option key={r}>{r}</option>)}</select></Campo>
       <Campo label="Notas" full><textarea rows="2" value={f.notas} onChange={set('notas')} /></Campo>
@@ -322,7 +329,7 @@ function EditarCliente({ c, onCancel, onSaved }) {
 export function NuevoCliente({ onClose, onCreado }) {
   const { perfil } = useApp()
   const [vendedores, setVendedores] = useState([])
-  const [f, setF] = useState({ empresa: '', contacto: '', cargo: '', telefono: '', email: '', rubro: RUBROS[0], tipo: 'empresa', flota: 1, origen: ORIGENES[0], vendedor_id: perfil.id, notas: '' })
+  const [f, setF] = useState({ empresa: '', contacto: '', cargo: '', telefono: '', email: '', rubro: RUBROS[0], tipo: 'empresa', flota: 1, origen: ORIGENES[0], vendedor_id: perfil.id, notas: '', etiquetas: [], valor_estimado: '' })
   const [err, setErr] = useState('')
   const [guardando, setGuardando] = useState(false)
   const set = (k) => (e) => setF((x) => ({ ...x, [k]: e.target.value }))
@@ -333,7 +340,8 @@ export function NuevoCliente({ onClose, onCreado }) {
     setErr('')
     if (!f.empresa.trim()) return setErr('Escribe la empresa o el nombre del cliente.')
     setGuardando(true)
-    const fila = { ...f, empresa: f.empresa.trim(), contacto: f.contacto.trim() || f.empresa.trim(), flota: Math.max(1, Number(f.flota) || 1), etapa: 'Prospecto' }
+    const fila = { ...f, empresa: f.empresa.trim(), contacto: f.contacto.trim() || f.empresa.trim(), flota: Math.max(1, Number(f.flota) || 1), etapa: 'Prospecto',
+      valor_estimado: f.valor_estimado === '' ? null : Math.max(0, Number(f.valor_estimado) || 0) }
     const { data, error } = await supabase.from('clientes').insert(fila).select('id').single()
     if (error) { setGuardando(false); return setErr(error.message) }
     await supabase.from('actividades').insert({ cliente_id: data.id, tipo: 'nota', texto: 'Prospecto creado.' })
@@ -347,12 +355,14 @@ export function NuevoCliente({ onClose, onCreado }) {
       <Error msg={err} />
       <div className="form">
         <Campo label="Empresa o nombre *" full><input type="text" value={f.empresa} onChange={set('empresa')} autoFocus /></Campo>
+        <Campo label="Etiquetas" full><ElegirEtiquetas valor={f.etiquetas} onChange={(v) => setF((x) => ({ ...x, etiquetas: v }))} /></Campo>
         <Campo label="Persona de contacto"><input type="text" value={f.contacto} onChange={set('contacto')} /></Campo>
         <Campo label="Cargo"><input type="text" value={f.cargo} onChange={set('cargo')} /></Campo>
         <Campo label="WhatsApp" ayuda="8 dígitos; se agrega el 591"><input type="text" inputMode="tel" value={f.telefono} onChange={set('telefono')} /></Campo>
         <Campo label="Correo"><input type="email" value={f.email} onChange={set('email')} /></Campo>
         <Campo label="Tipo"><select value={f.tipo} onChange={set('tipo')}><option value="empresa">Empresa</option><option value="personal">Personal</option></select></Campo>
-        <Campo label="Vehículos (aprox.)"><input type="number" min="1" value={f.flota} onChange={set('flota')} /></Campo>
+        <Campo label="Unidades (aprox.)" ayuda="Vehículos, animales o equipos"><input type="number" min="1" value={f.flota} onChange={set('flota')} /></Campo>
+        <Campo label="Valor mensual estimado (Bs)" ayuda="Vacío: se calcula con el tarifario de GPS vehicular"><input type="number" min="0" value={f.valor_estimado} onChange={set('valor_estimado')} /></Campo>
         <Campo label="Rubro"><select value={f.rubro} onChange={set('rubro')}>{RUBROS.map((r) => <option key={r}>{r}</option>)}</select></Campo>
         <Campo label="¿Cómo llegó?"><select value={f.origen} onChange={set('origen')}>{ORIGENES.map((r) => <option key={r}>{r}</option>)}</select></Campo>
         {perfil.rol === 'admin' && <Campo label="Vendedor" full><select value={f.vendedor_id} onChange={set('vendedor_id')}>{vendedores.map((v) => <option key={v.id} value={v.id}>{v.nombre}</option>)}</select></Campo>}
