@@ -173,6 +173,7 @@ Deno.serve(async (req) => {
           yo: await ver('me?fields=id,name'),
           apps: await ver(`${c.cuenta_id}/subscribed_apps`),
           conversaciones: await ver(`${c.cuenta_id}/conversations?limit=1&fields=updated_time`),
+          ...(c.plataforma === 'facebook' ? { instagram: await ver(`${c.cuenta_id}?fields=instagram_business_account{id,username}`) } : {}),
         }))
       }
       return new Response('Revisión hecha. Ya puedes cerrar esta pestaña.', { status: 200 })
