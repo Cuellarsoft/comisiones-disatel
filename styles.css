@@ -288,7 +288,9 @@ button.crm-etq b { font-weight: 700; opacity: .8; }
 .etq-grupo { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
 .etq-grupo > div { display: flex; flex-wrap: wrap; gap: 6px; }
 .etq-agregar { all: unset; cursor: pointer; font-size: 12.5px; color: var(--azul); text-decoration: underline; text-underline-offset: 3px; }
-.etq-nueva { display: grid; grid-template-columns: 180px 1fr 120px auto; gap: 8px; }
+.etq-nueva { display: grid; grid-template-columns: 240px 1fr 120px auto; gap: 8px; align-items: center; }
+.etq-catnueva { display: flex; gap: 8px; align-items: center; }
+.etq-catnueva input { flex: 1; min-width: 0; }
 .etq-fila { display: flex; align-items: center; gap: 10px; }
 .etq-fila input { max-width: 220px; }
 @media (max-width: 760px) { .etq-nueva { grid-template-columns: minmax(0, 1fr); } .etq-grupo-nom { min-width: 0; width: 100%; } }

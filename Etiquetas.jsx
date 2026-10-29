@@ -13,6 +13,7 @@ export default function ConfigEtiquetas() {
   const [err, setErr] = useState('')
   const [ok, setOk] = useState('')
   const [guardando, setGuardando] = useState(false)
+  const [catNueva, setCatNueva] = useState(false)
   const grupos = useMemo(() => [...new Set(filas.map((f) => f.grupo))], [filas])
   const set = (id, k, v) => setFilas((xs) => xs.map((x) => (x.id === id ? { ...x, [k]: v } : x)))
 
@@ -35,12 +36,14 @@ export default function ConfigEtiquetas() {
 
   async function agregar() {
     setErr(''); setOk('')
-    const grupo = nueva.grupo.trim() || 'General', nombre = nueva.nombre.trim()
+    const grupo = nueva.grupo.trim(), nombre = nueva.nombre.trim()
+    if (!grupo) return setErr('Escribe el nombre de la nueva categoría.')
     if (!nombre) return setErr('Escribe el nombre de la etiqueta.')
     if (filas.some((f) => f.grupo.toLowerCase() === grupo.toLowerCase() && f.nombre.toLowerCase() === nombre.toLowerCase())) return setErr('Esa etiqueta ya existe en ese grupo.')
-    const { data, error } = await supabase.from('etiquetas').insert({ grupo, nombre, color: nueva.color, orden: filas.length + 1 }).select('*').single()
+    const { data, error } = await supabase.from('etiquetas').insert({ grupo, nombre, color: nueva.color, orden: filas.length + 1, activo: true, de_cotizacion: false }).select('*').single()
     if (error) return setErr(error.message)
-    setFilas((xs) => [...xs, data]); setNueva((n) => ({ ...n, nombre: '' }))
+    setFilas((xs) => [...xs, data]); setNueva((n) => ({ ...n, grupo, nombre: '' })); setCatNueva(false)
+    setOk(`Etiqueta “${nombre}” agregada en ${grupo}.`)
     await cargarEtiquetas()
   }
 
@@ -53,9 +56,19 @@ export default function ConfigEtiquetas() {
       {ok && <div className="ok">{ok}</div>}
 
       <div className="card">
-        <div className="ch"><h2>Nueva etiqueta</h2></div>
+        <div className="ch"><h2>Nueva etiqueta</h2><span>Elige la categoría o crea una nueva</span></div>
         <div className="cb etq-nueva">
-          <input type="text" list="etq-grupos" value={nueva.grupo} placeholder="Grupo, ej.: Producto" onChange={(e) => setNueva({ ...nueva, grupo: e.target.value })} />
+          {catNueva
+            ? <span className="etq-catnueva">
+                <input type="text" autoFocus value={nueva.grupo} placeholder="Nueva categoría, ej.: Cómo llegó" aria-label="Nombre de la nueva categoría" onChange={(e) => setNueva({ ...nueva, grupo: e.target.value })} />
+                <button type="button" className="etq-agregar" onClick={() => { setCatNueva(false); setNueva({ ...nueva, grupo: grupos[0] || 'Producto' }) }}>Cancelar</button>
+              </span>
+            : <select value={nueva.grupo} aria-label="Categoría" onChange={(e) => e.target.value === '__nueva'
+                ? (setCatNueva(true), setNueva({ ...nueva, grupo: '' }))
+                : setNueva({ ...nueva, grupo: e.target.value })}>
+                {grupos.map((g) => <option key={g} value={g}>{g}</option>)}
+                <option value="__nueva">+ Nueva categoría…</option>
+              </select>}
           <datalist id="etq-grupos">{grupos.map((g) => <option key={g} value={g} />)}</datalist>
           <input type="text" value={nueva.nombre} placeholder="Nombre, ej.: Sensores de combustible" onChange={(e) => setNueva({ ...nueva, nombre: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && agregar()} />
           <select value={nueva.color} onChange={(e) => setNueva({ ...nueva, color: e.target.value })}>{Object.entries(COLORES).map(([k, t]) => <option key={k} value={k}>{t}</option>)}</select>
