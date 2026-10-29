@@ -4,7 +4,7 @@ import { cotizar, normalizarConfig } from './tarifas'
 import { bsPdf, generarPdf } from './cotizacionPdf'
 import { fdate, hoyISO } from './lib'
 import { supabase } from './supabase'
-import { aBase64, whatsapp } from './crmLib'
+import { aBase64, correo, whatsapp } from './crmLib'
 
 // N.º único: fecha, hora y las iniciales del vendedor (dos vendedores no chocan en el mismo minuto)
 const nuevoNumero = (nombre = '') => {
@@ -34,6 +34,7 @@ export default function Cotizaciones() {
   // Una cotización vendida conserva los precios con que se vendió; las demás usan la configuración vigente
   const cfg = useMemo(() => (soloLectura && abierta?.datos?.config ? normalizarConfig(abierta.datos.config) : configCot), [soloLectura, abierta, configCot])
   const [clienteId, setClienteId] = useState(() => abierta?.cliente_id || cotAbrir?.cliente_id || null)
+  const [correoDirecto, setCorreoDirecto] = useState(null) // correo conectado del vendedor (envío automático con el PDF)
   const [waDirecto, setWaDirecto] = useState(null) // número de WhatsApp conectado del vendedor (envío automático con el PDF)
   const [f, setF] = useState(() => {
     if (!abierta) return cotAbrir?.prefill ? { ...VACIO, ...cotAbrir.prefill } : VACIO
@@ -56,6 +57,8 @@ export default function Cotizaciones() {
   useEffect(() => {
     supabase.from('wa_numeros').select('numero').eq('vendedor_id', perfil.id).eq('activo', true).limit(1)
       .then(({ data }) => setWaDirecto(data?.[0]?.numero || null))
+    supabase.from('correo_cuentas').select('correo').eq('vendedor_id', perfil.id).eq('activo', true).limit(1)
+      .then(({ data }) => setCorreoDirecto(data?.[0]?.correo || null))
   }, [perfil.id])
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
   const setAcc = (id, v) => setF((s) => ({ ...s, accesorios: { ...s.accesorios, [id]: v } }))
@@ -131,24 +134,46 @@ export default function Cotizaciones() {
       const asunto = `${f.presentacion ? 'Propuesta' : 'Cotización'} DISATEL N.º ${numero} - ${f.cliente.trim()}`
       const cuerpo = `Estimado(a) ${saludo}:\n\nAdjunto ${doc} N.º ${numero} de nuestro servicio de rastreo GPS y monitoreo para ${veh}.\n\nQuedo atento a cualquier consulta.\n\nSaludos cordiales,\n${perfil.nombre}\nDISATEL Bolivia${miTel.trim() ? '\n' + miTel.trim() : ''}`
 
+      // Se registra una sola vez aunque se envíe por los dos canales
+      const etiqueta = { email: 'correo', ambos: 'whatsapp y correo' }[canalPedido] || canalPedido
+      let fila = null
+      const reg = async () => (fila ||= await registrar(etiqueta))
+      const documento = async () => ({ base64: aBase64(new Uint8Array(await file.arrayBuffer())), nombre: file.name, mime: 'application/pdf' })
+      const hechos = []
+
       // WhatsApp conectado: la plataforma envía el PDF directo desde el número del vendedor
       if (waDirecto && (canal === 'whatsapp' || canal === 'ambos')) {
         if (!f.telefono.trim()) throw new globalThis.Error('Escribe el WhatsApp del cliente para enviarle la propuesta.')
-        const fila = await registrar(canal === 'ambos' ? 'whatsapp y correo' : 'whatsapp')
-        const bytes = new Uint8Array(await file.arrayBuffer())
-        const r = await whatsapp({ accion: 'enviar', cliente_id: fila.cliente_id, texto, documento: { base64: aBase64(bytes), nombre: file.name, mime: 'application/pdf' } })
-        const envio = r.modo === 'plantilla'
+        if (canal === 'ambos' && correoDirecto && !f.email.trim()) throw new globalThis.Error('Escribe el correo del cliente para enviarle la propuesta.')
+        await reg()
+        const r = await whatsapp({ accion: 'enviar', cliente_id: fila.cliente_id, texto, documento: await documento() })
+        hechos.push(r.modo === 'plantilla'
           ? `Enviado por WhatsApp desde +${waDirecto} con la plantilla de propuesta (el cliente no había escrito en las últimas 24 h).`
-          : `Enviado por WhatsApp desde +${waDirecto} con el PDF adjunto.`
-        if (canal === 'whatsapp') { setAviso(envio + ' Lo ves en la conversación del cliente.'); return }
-        setAviso(envio)
-        // En el celular el menú de compartir necesita un toque nuevo: el correo queda como segundo paso
-        if (esMovil()) { setFalta('email'); return }
+          : `Enviado por WhatsApp desde +${waDirecto} con el PDF adjunto.`)
+        setAviso(hechos.join(' '))
+        if (canal === 'whatsapp') { setAviso(hechos[0] + ' Lo ves en la conversación del cliente.'); return }
         canal = 'email' // falta el correo
+        // Sin correo conectado, en el celular el menú de compartir necesita un toque nuevo: el correo queda como segundo paso
+        if (!correoDirecto && esMovil()) { setFalta('email'); return }
+      }
+
+      // Correo conectado: sale desde la casilla del vendedor con el PDF adjunto, sin abrir nada
+      const enviarCorreo = async () => {
+        await reg()
+        await correo({ accion: 'enviar', para: f.email.trim(), asunto, texto: cuerpo, documento: await documento() })
+        hechos.push(`Enviado por correo desde ${correoDirecto} a ${f.email.trim()} con el PDF adjunto.`)
+        setAviso(hechos.join(' '))
+      }
+      let correoDespues = false
+      if (correoDirecto && (canal === 'email' || canal === 'ambos')) {
+        if (!f.email.trim()) throw new globalThis.Error('Escribe el correo del cliente para enviarle la propuesta.')
+        if (canal === 'email') { await enviarCorreo(); return }
+        // Por los dos: primero se abre WhatsApp (necesita el toque del vendedor) y después sale el correo solo
+        canal = 'whatsapp'; correoDespues = true
       }
 
       // Se guarda en paralelo para no demorar el menú de compartir del celular
-      const guardado = registrar({ email: 'correo', ambos: 'whatsapp y correo' }[canal] || canal)
+      const guardado = reg()
 
       if (canal === 'pdf') { descargar(file); await guardado; return }
 
@@ -161,6 +186,7 @@ export default function Cotizaciones() {
         // El celular solo permite un envío por toque: el correo queda como segundo paso
         if (canal === 'ambos' && compartido) setFalta('email')
         await guardado
+        if (correoDespues) await enviarCorreo()
         return
       }
       // En la computadora: se descarga el PDF y se abre el chat o el correo para adjuntarlo
@@ -174,6 +200,7 @@ export default function Cotizaciones() {
       // WhatsApp Web y el correo no aceptan adjuntos desde otra página: se guía al vendedor para adjuntarlo
       setGuia({ canal, file, texto, asunto, cuerpo })
       await guardado
+      if (correoDespues) await enviarCorreo()
     } catch (x) {
       setErr(x.message.startsWith('No se pudo') || x.message.startsWith('Escribe') ? x.message : 'No se pudo enviar la cotización: ' + x.message)
     } finally { setTrabajando(false) }
@@ -283,6 +310,7 @@ export default function Cotizaciones() {
                 </div>
               )}
               {waDirecto && <div className="cot-wa-directo">WhatsApp conectado: la propuesta se envía directo desde +{waDirecto}, con el PDF adjunto.</div>}
+              {correoDirecto && <div className="cot-wa-directo">Correo conectado: la propuesta sale desde {correoDirecto}, con el PDF adjunto.</div>}
               <div className="cot-botones">
                 <button className="btn primario ambos" disabled={trabajando} onClick={() => accion('ambos')}>Enviar por WhatsApp y correo</button>
                 <button className="btn whatsapp" disabled={trabajando} onClick={() => accion('whatsapp')}>Enviar por WhatsApp</button>

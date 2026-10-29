@@ -18,6 +18,7 @@ import ListaCotizaciones from './ListaCotizaciones'
 import ConfigCotizaciones from './ConfigCotizaciones'
 import { Embudo, Seguimientos as SeguimientosCrm, ListaClientes, PanelClientes } from './Clientes'
 import ConfigWhatsapp from './ConfigWhatsapp'
+import ConfigCorreo from './ConfigCorreo'
 import ConfigEtiquetas from './Etiquetas'
 import { CONFIG_BASE, normalizarConfig } from './tarifas'
 
@@ -43,14 +44,14 @@ const COMISIONES_VENDEDOR = [
 const COTIZACIONES = (admin) => [
   ['cot-nueva', 'Nueva cotización', Cotizaciones],
   ['cot-lista', admin ? 'Todas las cotizaciones' : 'Mis cotizaciones', ListaCotizaciones],
-  ...(admin ? [['sep', 'Configuración'], ['cot-config', 'Precios y condiciones', ConfigCotizaciones]] : []),
+  ...(admin ? [['sep', 'Configuración'], ['cot-config', 'Precios y condiciones', ConfigCotizaciones], ['cot-correo', 'Correo de vendedores', ConfigCorreo]] : []),
 ]
 
 const CLIENTES = (admin) => [
   ['cli-embudo', 'Embudo de ventas', Embudo],
   ['cli-seguimientos', 'Seguimientos', SeguimientosCrm],
   ['cli-lista', admin ? 'Todos los clientes' : 'Mis clientes', ListaClientes],
-  ...(admin ? [['cli-panel', 'Panel del equipo', PanelClientes], ['sep', 'Configuración'], ['cli-etiquetas', 'Etiquetas', ConfigEtiquetas], ['cli-whatsapp', 'WhatsApp', ConfigWhatsapp]] : []),
+  ...(admin ? [['cli-panel', 'Panel del equipo', PanelClientes], ['sep', 'Configuración'], ['cli-etiquetas', 'Etiquetas', ConfigEtiquetas], ['cli-whatsapp', 'WhatsApp', ConfigWhatsapp], ['cli-correo', 'Correo', ConfigCorreo]] : []),
 ]
 
 function Inicio({ perfil, ir, salir }) {

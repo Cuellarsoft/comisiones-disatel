@@ -69,3 +69,16 @@ export const aBase64 = (bytes) => {
   for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000))
   return btoa(s)
 }
+
+// Correo directo desde la casilla del vendedor (función correo-enviar)
+export async function correo(cuerpo) {
+  const { data: { session } } = await supabase.auth.getSession()
+  const r = await fetch(`${SUPABASE_URL}/functions/v1/correo-enviar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+    body: JSON.stringify(cuerpo),
+  })
+  const data = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error(data.error || 'No se pudo enviar el correo.')
+  return data
+}
