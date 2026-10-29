@@ -78,6 +78,8 @@ async function clienteDe(cuenta: any, usuarioId: string, crear: boolean) {
     texto: `Responder: nuevo contacto por ${red}`, automatico: true,
   })
   await sb.from('actividades').insert({ cliente_id: nuevo.id, vendedor_id: cuenta.vendedor_id, tipo: 'nota', texto: `Escribió por primera vez por ${red}.` })
+  // Mensajes previos de esa persona (por ejemplo, el saludo automático de la página) quedan en el mismo cliente
+  await sb.from('redes_mensajes').update({ cliente_id: nuevo.id }).eq('cuenta_id', cuenta.id).eq('usuario_id', usuarioId).is('cliente_id', null)
   return { id: nuevo.id, nombre }
 }
 
