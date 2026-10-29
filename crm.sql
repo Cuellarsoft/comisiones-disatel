@@ -213,6 +213,7 @@ begin
   end loop;
 
   update public.cotizaciones set estado = 'Vendida', fecha_venta = coalesce(p_fecha, current_date) where id = c.id;
+  select cliente_id into c.cliente_id from public.cotizaciones where id = c.id;
   if c.cliente_id is not null then
     update public.clientes set etapa = 'Ganado' where id = c.cliente_id;
     insert into public.actividades (cliente_id, vendedor_id, tipo, texto)
