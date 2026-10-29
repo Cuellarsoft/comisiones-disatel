@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
             filas.push({
               cuenta_id: c.id, plataforma: c.plataforma, clase: 'comentario', direccion: propio ? 'saliente' : 'entrante', origen: propio ? 'pagina' : 'cliente',
               usuario_id: propio ? null : k.from?.id ?? null, usuario_nombre: propio ? c.nombre : nombre(k), texto: fb ? k.message : k.text,
-              mid: k.id, publicacion_id: p.id, publicacion_url: url ?? null, respondido: resp.some(pagina),
+              mid: k.id, responde_a: null, publicacion_id: p.id, publicacion_url: url ?? null, respondido: resp.some(pagina),
               fecha: new Date(fb ? k.created_time : k.timestamp).toISOString(),
             })
             for (const x of resp) {
@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
               filas.push({
                 cuenta_id: c.id, plataforma: c.plataforma, clase: 'comentario', direccion: suyo ? 'saliente' : 'entrante', origen: suyo ? 'pagina' : 'cliente',
                 usuario_id: suyo ? null : x.from?.id ?? null, usuario_nombre: suyo ? c.nombre : nombre(x), texto: fb ? x.message : x.text,
-                mid: x.id, responde_a: k.id, publicacion_id: p.id, publicacion_url: url ?? null,
+                mid: x.id, responde_a: k.id, publicacion_id: p.id, publicacion_url: url ?? null, respondido: false,
                 fecha: new Date(fb ? x.created_time : x.timestamp).toISOString(),
               })
             }
