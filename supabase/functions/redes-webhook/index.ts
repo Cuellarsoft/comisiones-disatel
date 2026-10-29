@@ -145,6 +145,27 @@ Deno.serve(async (req) => {
     if (url.searchParams.get('hub.mode') === 'subscribe' && VERIFY_TOKEN && url.searchParams.get('hub.verify_token') === VERIFY_TOKEN) {
       return new Response(url.searchParams.get('hub.challenge') ?? '', { status: 200 })
     }
+    // Revisión de la conexión con la página: deja el resultado en los registros del servidor (no lo muestra)
+    if (url.searchParams.get('revisar') === '1') {
+      const { data: cs } = await sb.from('redes_cuentas').select('*').eq('activo', true)
+      for (const c of cs ?? []) {
+        const tok = Deno.env.get(c.secreto || '') ?? ''
+        const ver = async (ruta: string) => {
+          try {
+            const r = await fetch(`https://graph.facebook.com/${VER}/${ruta}`, { headers: { Authorization: `Bearer ${tok}` } })
+            const j = await r.json()
+            return { status: r.status, ...(j.error ? { error: { code: j.error.code, sub: j.error.error_subcode, msg: j.error.message } } : { data: j.data ?? j }) }
+          } catch (e) { return { fallo: String(e) } }
+        }
+        console.log('revision', c.plataforma, c.cuenta_id, JSON.stringify({
+          hay_clave: !!tok, largo_clave: tok.length,
+          yo: await ver('me?fields=id,name'),
+          apps: await ver(`${c.cuenta_id}/subscribed_apps`),
+          conversaciones: await ver(`${c.cuenta_id}/conversations?limit=1&fields=updated_time`),
+        }))
+      }
+      return new Response('Revisión hecha. Ya puedes cerrar esta pestaña.', { status: 200 })
+    }
     return new Response('Prohibido', { status: 403 })
   }
   if (req.method !== 'POST') return new Response('Método no permitido', { status: 405 })
