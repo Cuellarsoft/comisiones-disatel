@@ -5,6 +5,7 @@ import { bs, bs0, fdate } from './lib'
 import { ETAPAS, ICONO_ACT, ORIGENES, RUBROS, TIPOS_ACT, cambiarEtapa, masDiasISO, registrarActividad, valorMensual, whatsapp } from './crmLib'
 import { VenderModal } from './ListaCotizaciones'
 import { ElegirEtiquetas, EtiquetasCliente } from './Etiquetas'
+import { ChatRedes } from './ChatRedes'
 
 const hora = (iso) => new Date(iso).toLocaleString('es-BO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 
@@ -138,10 +139,17 @@ export default function FichaCliente({ id, onClose, onCambio }) {
             <button role="tab" aria-selected={pestana === 'whatsapp'} className={pestana === 'whatsapp' ? 'on' : ''} onClick={() => setPestana('whatsapp')}>
               WhatsApp{c.wa_no_leidos > 0 && <span className="crm-noleidos">{c.wa_no_leidos}</span>}
             </button>
+            {[['facebook', 'Facebook', c.fb_id], ['instagram', 'Instagram', c.ig_id]].filter((x) => x[2]).map(([k, t]) => (
+              <button key={k} role="tab" aria-selected={pestana === k} className={pestana === k ? 'on' : ''} onClick={() => setPestana(k)}>
+                {t}{c.redes_no_leidos > 0 && <span className="crm-noleidos">{c.redes_no_leidos}</span>}
+              </button>
+            ))}
           </div>
           {pestana === 'historial'
             ? <Historial c={c} acts={d.acts} nombre={nombre} onCambio={refrescar} />
-            : <Conversacion c={c} onLeido={refrescar} />}
+            : pestana === 'whatsapp'
+              ? <Conversacion c={c} onLeido={refrescar} />
+              : <ChatRedes c={c} plataforma={pestana} onLeido={refrescar} />}
         </div>
       </div>
 

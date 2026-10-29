@@ -101,7 +101,7 @@ export function Embudo() {
               {cs.map((c) => (
                 <div key={c.id} className="crm-tarjeta" draggable onDragStart={() => setArrastrando(c)} onClick={() => abrir(c.id)} role="button" tabIndex={0}
                   onKeyDown={(ev) => ev.key === 'Enter' && abrir(c.id)}>
-                  <div className="crm-tarjeta-cab"><b>{c.empresa}</b>{c.wa_no_leidos > 0 && <span className="crm-noleidos" title="Mensajes de WhatsApp sin leer">{c.wa_no_leidos}</span>}</div>
+                  <div className="crm-tarjeta-cab"><b>{c.empresa}</b>{(c.wa_no_leidos || 0) + (c.redes_no_leidos || 0) > 0 && <span className="crm-noleidos" title="Mensajes sin leer (WhatsApp, Facebook e Instagram)">{(c.wa_no_leidos || 0) + (c.redes_no_leidos || 0)}</span>}</div>
                   <span className="crm-sub">{c.flota} {c.flota === 1 ? 'vehículo' : 'vehículos'} · {c.tipo === 'empresa' ? 'Empresa' : 'Personal'} · {bs0(valorMensual(c, configCot))}/mes</span>
                   <EtiquetasCliente ids={c.etiquetas} />
                   {vend === 'todos' && d.perfiles.length > 1 && <span className="crm-sub">{nombre(c.vendedor_id)}</span>}
@@ -218,7 +218,7 @@ export function ListaClientes() {
           <tbody>
             {fil.map((c) => (
               <tr key={c.id} className="click" onClick={() => abrir(c.id)}>
-                <td><b>{c.empresa}</b>{c.wa_no_leidos > 0 && <span className="crm-noleidos">{c.wa_no_leidos}</span>}<span className="sub">{[c.contacto !== c.empresa ? c.contacto : null, c.telefono].filter(Boolean).join(' · ')}</span><EtiquetasCliente ids={c.etiquetas} /></td>
+                <td><b>{c.empresa}</b>{(c.wa_no_leidos || 0) + (c.redes_no_leidos || 0) > 0 && <span className="crm-noleidos">{(c.wa_no_leidos || 0) + (c.redes_no_leidos || 0)}</span>}<span className="sub">{[c.contacto !== c.empresa ? c.contacto : null, c.telefono].filter(Boolean).join(' · ')}</span><EtiquetasCliente ids={c.etiquetas} /></td>
                 <td>{c.rubro || '—'}<span className="sub">{c.origen}</span></td>
                 <td className="r num">{c.flota}</td>
                 <td className="r num">{bs0(valorMensual(c, configCot))}</td>

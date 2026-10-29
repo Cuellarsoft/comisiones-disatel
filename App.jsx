@@ -19,6 +19,8 @@ import ConfigCotizaciones from './ConfigCotizaciones'
 import { Embudo, Seguimientos as SeguimientosCrm, ListaClientes, PanelClientes } from './Clientes'
 import ConfigWhatsapp from './ConfigWhatsapp'
 import ConfigCorreo from './ConfigCorreo'
+import Redes from './Redes'
+import ConfigRedes from './ConfigRedes'
 import ConfigEtiquetas from './Etiquetas'
 import { CONFIG_BASE, normalizarConfig } from './tarifas'
 
@@ -51,7 +53,8 @@ const CLIENTES = (admin) => [
   ['cli-embudo', 'Embudo de ventas', Embudo],
   ['cli-seguimientos', 'Seguimientos', SeguimientosCrm],
   ['cli-lista', admin ? 'Todos los clientes' : 'Mis clientes', ListaClientes],
-  ...(admin ? [['cli-panel', 'Panel del equipo', PanelClientes], ['sep', 'Configuración'], ['cli-etiquetas', 'Etiquetas', ConfigEtiquetas], ['cli-whatsapp', 'WhatsApp', ConfigWhatsapp], ['cli-correo', 'Correo', ConfigCorreo]] : []),
+  ['cli-redes', 'Facebook e Instagram', Redes],
+  ...(admin ? [['cli-panel', 'Panel del equipo', PanelClientes], ['sep', 'Configuración'], ['cli-etiquetas', 'Etiquetas', ConfigEtiquetas], ['cli-whatsapp', 'WhatsApp', ConfigWhatsapp], ['cli-redes-config', 'Redes sociales', ConfigRedes], ['cli-correo', 'Correo', ConfigCorreo]] : []),
 ]
 
 function Inicio({ perfil, ir, salir }) {

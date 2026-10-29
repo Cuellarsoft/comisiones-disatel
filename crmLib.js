@@ -6,7 +6,7 @@ export const ETAPAS = ['Prospecto', 'Contactado', 'Cotizado', 'Negociación', 'G
 export const CHIP_ETAPA = { Prospecto: 'gris', Contactado: 'azul', Cotizado: 'azul', Negociación: 'ambar', Ganado: 'verde', Perdido: 'rojo' }
 export const TIPOS_ACT = { llamada: 'Llamada', whatsapp: 'WhatsApp', visita: 'Visita', videollamada: 'Videollamada', correo: 'Correo', cotizacion: 'Cotización', nota: 'Nota', etapa: 'Cambio de etapa', venta: 'Venta' }
 export const ICONO_ACT = { llamada: '☎', whatsapp: '✉', visita: '⌂', videollamada: '▶', correo: '@', cotizacion: '▤', nota: '✎', etapa: '→', venta: '★' }
-export const ORIGENES = ['Referido', 'WhatsApp', 'Página web', 'Visita en frío', 'Feria', 'Cliente antiguo', 'Redes sociales', 'Cotización']
+export const ORIGENES = ['Referido', 'WhatsApp', 'Página web', 'Visita en frío', 'Feria', 'Cliente antiguo', 'Facebook', 'Instagram', 'Redes sociales', 'Cotización']
 export const RUBROS = ['Transporte y logística', 'Agropecuario', 'Construcción', 'Distribución', 'Minería', 'Servicios', 'Particular', 'Otro']
 
 // Valor mensual: el estimado que cargó el vendedor o, si no hay, el del tarifario de GPS vehicular
@@ -82,3 +82,17 @@ export async function correo(cuerpo) {
   if (!r.ok) throw new Error(data.error || 'No se pudo enviar el correo.')
   return data
 }
+
+// Facebook e Instagram (función redes-enviar)
+export async function redes(cuerpo) {
+  const { data: { session } } = await supabase.auth.getSession()
+  const r = await fetch(`${SUPABASE_URL}/functions/v1/redes-enviar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+    body: JSON.stringify(cuerpo),
+  })
+  const data = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error(data.error || 'No se pudo enviar.')
+  return data
+}
+export const RED = { facebook: 'Facebook', instagram: 'Instagram' }
