@@ -3,10 +3,10 @@ import logo from './logo.png'
 // Página pública (sin iniciar sesión): ventas-disatel.vercel.app/privacidad
 // Meta la pide como "Privacy Policy URL" y "Data deletion instructions URL" para revisar la app de Facebook e Instagram.
 export const DATOS = {
-  razonSocial: '[razón social]',
-  direccion: '[dirección], Santa Cruz de la Sierra, Bolivia',
-  correo: '[correo de contacto]',
-  telefono: '[teléfono]',
+  razonSocial: 'M2M SRL',
+  direccion: 'Calle Paquio #7, Santa Cruz de la Sierra, Bolivia',
+  correo: 'info.bo@grupodisatel.com',
+  telefono: '+591 75004444',
   meses: 24,
   actualizado: '29 de octubre de 2026',
 }
