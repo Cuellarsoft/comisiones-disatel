@@ -157,8 +157,17 @@ Deno.serve(async (req) => {
             return { status: r.status, ...(j.error ? { error: { code: j.error.code, sub: j.error.error_subcode, msg: j.error.message } } : { data: j.data ?? j }) }
           } catch (e) { return { fallo: String(e) } }
         }
+        // Suscribe la página a los avisos (si la clave tiene los permisos); repetirlo no hace daño
+        let suscripcion: any = null
+        if (c.plataforma === 'facebook') {
+          try {
+            const r = await fetch(`https://graph.facebook.com/${VER}/${c.cuenta_id}/subscribed_apps?subscribed_fields=messages,message_echoes,feed`, { method: 'POST', headers: { Authorization: `Bearer ${tok}` } })
+            const j = await r.json()
+            suscripcion = j.error ? { error: { code: j.error.code, msg: j.error.message } } : j
+          } catch (e) { suscripcion = { fallo: String(e) } }
+        }
         console.log('revision', c.plataforma, c.cuenta_id, JSON.stringify({
-          hay_clave: !!tok, largo_clave: tok.length,
+          hay_clave: !!tok, largo_clave: tok.length, suscripcion,
           yo: await ver('me?fields=id,name'),
           apps: await ver(`${c.cuenta_id}/subscribed_apps`),
           conversaciones: await ver(`${c.cuenta_id}/conversations?limit=1&fields=updated_time`),
