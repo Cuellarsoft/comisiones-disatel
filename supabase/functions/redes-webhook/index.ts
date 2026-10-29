@@ -157,13 +157,15 @@ Deno.serve(async (req) => {
   let data: any
   try { data = JSON.parse(body) } catch { return new Response('JSON inválido', { status: 400 }) }
 
+  console.log('aviso', data.object, (data.entry ?? []).map((e: any) => ({ id: e.id, claves: Object.keys(e) })))
   const plataforma = data.object === 'page' ? 'facebook' : data.object === 'instagram' ? 'instagram' : null
   if (!plataforma) return new Response('ok', { status: 200 })
   try {
     for (const entry of data.entry ?? []) {
       const cuenta = await cuentaDe(plataforma, String(entry.id))
       if (!cuenta) { console.warn('cuenta no registrada', plataforma, entry.id); continue }
-      for (const ev of entry.messaging ?? []) await mensaje(cuenta, ev)
+      // standby: mensajes que llegan cuando otra app de la página atiende primero (enrutamiento de conversaciones)
+      for (const ev of [...(entry.messaging ?? []), ...(entry.standby ?? [])]) await mensaje(cuenta, ev)
       for (const ch of entry.changes ?? []) {
         if (ch.field === 'feed' || ch.field === 'comments') await comentario(cuenta, ch.value ?? {})
       }
