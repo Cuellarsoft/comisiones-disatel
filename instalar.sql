@@ -265,7 +265,7 @@ begin
     raise exception 'Ya existe una liquidación posterior para %', prof.nombre;
   end if;
 
-  select count(*) into v_unid from public.ventas
+  select coalesce(sum(unidades), 0) into v_unid from public.ventas
    where vendedor_id = p_vendedor and activado and fecha_instalacion between ini and fin;
   v_bono := case when ya then 0 else public.bono_para(v_unid) end;
 

@@ -28,7 +28,7 @@ export default function ResumenAdmin() {
     const filas = vendedores.map((p) => {
       const vs = d.ventas.filter((v) => v.vendedor_id === p.id)
       const mesV = vs.filter(enMes)
-      const unid = mesV.length
+      const unid = mesV.reduce((s, v) => s + (v.unidades ?? 1), 0)
       const sinPago = vs.filter((v) => instalada(v) && v.estado === 'Activo' && !v.fecha_primer_pago)
       return {
         p, unid, info: bonoInfo(unid, params.bonos),
@@ -42,7 +42,7 @@ export default function ResumenAdmin() {
     const tot = (k) => filas.reduce((s, f) => s + f[k], 0)
     const vencidosVentas = d.ventas.filter((v) => instalada(v) && v.estado === 'Activo' && !v.fecha_primer_pago && diasDesde(v.fecha_instalacion) > plazo)
     const meses = ultimosMeses(7).slice(1).reverse()
-    const porMes = meses.map((m) => ({ m, n: d.ventas.filter((v) => instalada(v) && v.fecha_instalacion.slice(0, 7) === m).length }))
+    const porMes = meses.map((m) => ({ m, n: d.ventas.filter((v) => instalada(v) && v.fecha_instalacion.slice(0, 7) === m).reduce((s, v) => s + (v.unidades ?? 1), 0) }))
     return { filas, tot, vencidosVentas, porMes, maxMes: Math.max(1, ...porMes.map((x) => x.n)) }
   }, [d, mes, params, plazo])
 

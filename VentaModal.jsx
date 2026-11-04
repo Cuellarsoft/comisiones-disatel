@@ -17,6 +17,7 @@ export default function VentaModal({ venta, vendedores = [], onClose, onSaved })
     cliente: venta?.cliente || '',
     empresa: venta?.empresa || '',
     vehiculo: venta?.vehiculo || '',
+    unidades: venta?.unidades ?? 1,
     modalidad: venta?.modalidad || 'Postpago',
     precio_mensual: venta?.precio_mensual ?? params.precio_postpago,
     contrato: venta?.contrato || false,
@@ -53,7 +54,7 @@ export default function VentaModal({ venta, vendedores = [], onClose, onSaved })
     if (!f.cliente.trim() || !f.vehiculo.trim()) return setErr('Cliente y vehículo son obligatorios')
     const row = {
       fecha_captacion: f.fecha_captacion, cliente: f.cliente.trim(), empresa: f.empresa.trim() || null,
-      vehiculo: f.vehiculo.trim().toUpperCase(), modalidad: f.modalidad, precio_mensual: Number(f.precio_mensual),
+      vehiculo: f.vehiculo.trim().toUpperCase(), unidades: Math.max(1, Math.round(Number(f.unidades) || 1)), modalidad: f.modalidad, precio_mensual: Number(f.precio_mensual),
       contrato: f.contrato, notas: f.notas.trim() || null,
     }
     if (admin) {
@@ -110,6 +111,9 @@ export default function VentaModal({ venta, vendedores = [], onClose, onSaved })
           <Campo label="Cliente (contacto)"><input type="text" value={f.cliente} onChange={set('cliente')} autoFocus={nueva} /></Campo>
           <Campo label="Empresa"><input type="text" value={f.empresa} onChange={set('empresa')} placeholder="Particular" /></Campo>
           <Campo label="Vehículo / placa / ID"><input type="text" value={f.vehiculo} onChange={set('vehiculo')} /></Campo>
+          <Campo label="Cantidad de equipos" ayuda="Cuántos dispositivos incluye esta venta; cuenta para el bono">
+            <input type="number" min="1" step="1" value={f.unidades} onChange={set('unidades')} />
+          </Campo>
           <Campo label="Fecha de captación"><input type="date" value={f.fecha_captacion} onChange={set('fecha_captacion')} /></Campo>
           <Campo label="Tipo de cliente">
             <select value={f.modalidad} onChange={cambiarModalidad}><option value="Postpago">Empresa</option><option value="Prepago">Personal</option></select>

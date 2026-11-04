@@ -60,7 +60,7 @@ export default function Ventas() {
   function exportar() {
     descargarCSV('ventas-disatel.csv', lista.map((v) => ({
       Vendedor: nombre(v.vendedor_id), Captacion: v.fecha_captacion, Cliente: v.cliente, Empresa: v.empresa || '',
-      Vehiculo: v.vehiculo, Tipo: modalidad(v.modalidad), Precio: v.precio_mensual, Contrato: v.contrato ? 'Sí' : 'No',
+      Vehiculo: v.vehiculo, Unidades: v.unidades ?? 1, Tipo: modalidad(v.modalidad), Precio: v.precio_mensual, Contrato: v.contrato ? 'Sí' : 'No',
       Instalacion: v.fecha_instalacion || '', Activado: v.activado ? 'Sí' : 'No', PrimerPago: v.fecha_primer_pago || '',
       Estado: v.estado, FechaBaja: v.fecha_baja || '', CausaBaja: v.causa_baja || '', Comision: v.comision,
       Liquidacion: v.liquidacion_id ? mesLabel(liqs[v.liquidacion_id]) : '',
@@ -93,7 +93,7 @@ export default function Ventas() {
         </div>
         <div className="tabla-wrap"><table>
           <thead><tr>
-            <th>Captación</th>{admin && <th>Vendedor</th>}<th>Cliente</th><th>Vehículo</th><th>Tipo</th>
+            <th>Captación</th>{admin && <th>Vendedor</th>}<th>Cliente</th><th>Vehículo</th><th className="r">Equipos</th><th>Tipo</th>
             <th className="r">Precio</th><th className="r">Comisión</th><th>Instalación</th><th>1er pago</th><th>Estado</th><th>Liquidada</th>
           </tr></thead>
           <tbody>
@@ -105,6 +105,7 @@ export default function Ventas() {
                   {admin && <td>{nombre(v.vendedor_id)}</td>}
                   <td><b>{v.cliente}</b><span className="sub">{v.empresa || 'Particular'}</span></td>
                   <td>{v.vehiculo}</td>
+                  <td className="r num">{v.unidades ?? 1}</td>
                   <td>{modalidad(v.modalidad)}</td>
                   <td className="r num">{bs(v.precio_mensual)}</td>
                   <td className="r num">{bs(v.comision)}</td>
@@ -115,7 +116,7 @@ export default function Ventas() {
                 </tr>
               )
             })}
-            {!lista.length && <tr><td colSpan="11" className="vacio">No hay ventas con estos filtros.</td></tr>}
+            {!lista.length && <tr><td colSpan="12" className="vacio">No hay ventas con estos filtros.</td></tr>}
           </tbody>
         </table></div>
       </div>

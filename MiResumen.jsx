@@ -23,7 +23,7 @@ export default function MiResumen() {
   if (!d) return <Cargando />
   const plazo = params.plazo_pago_dias
   const delMes = d.ventas.filter((v) => instalada(v) && v.fecha_instalacion.slice(0, 7) === mes)
-  const unid = delMes.length
+  const unid = delMes.reduce((s, v) => s + (v.unidades ?? 1), 0)
   const info = bonoInfo(unid, params.bonos)
   const porCobrar = d.ventas
     .filter((v) => instalada(v) && v.estado === 'Activo' && !v.fecha_primer_pago)
