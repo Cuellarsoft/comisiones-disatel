@@ -83,6 +83,8 @@ async function clienteDe(numero: any, tel: string, nombre: string | null, crear:
     texto: 'Responder: nuevo contacto por WhatsApp', automatico: true,
   })
   await sb.from('actividades').insert({ cliente_id: nuevo.id, vendedor_id: numero.vendedor_id, tipo: 'whatsapp', texto: 'Escribió por primera vez por WhatsApp.' })
+  // Los mensajes anteriores de ese número (historial) pasan a la ficha del nuevo cliente
+  await sb.from('wa_mensajes').update({ cliente_id: nuevo.id }).eq('wa_numero_id', numero.id).eq('telefono', tel).is('cliente_id', null)
   return nuevo.id
 }
 

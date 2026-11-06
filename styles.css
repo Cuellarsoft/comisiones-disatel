@@ -489,3 +489,11 @@ button.crm-etq b { font-weight: 700; opacity: .8; }
 .priv-hoja ul, .priv-hoja ol { padding-left: 22px; display: grid; gap: 6px; }
 .priv-sub { color: var(--gris); margin: 0 0 18px; font-size: 13px; }
 @media (max-width: 600px) { .priv-hoja { margin: 0; border-radius: 0; border-left: 0; border-right: 0; } }
+
+/* WhatsApp sin asignar */
+.sa-barra { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+.sa-barra input[type=search] { flex: 1; min-width: 220px; max-width: 380px; }
+.sa-avatar { background: #25d366; }
+.sa-chat { max-height: 460px; overflow-y: auto; }
+.sa-form { display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 8px; margin-top: 12px; }
+@media (max-width: 860px) { .sa-form { grid-template-columns: 1fr 1fr; } .sa-form input { grid-column: 1 / -1; } }

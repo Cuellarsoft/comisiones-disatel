@@ -20,6 +20,7 @@ import { Embudo, Seguimientos as SeguimientosCrm, ListaClientes, PanelClientes }
 import ConfigWhatsapp from './ConfigWhatsapp'
 import ConfigCorreo from './ConfigCorreo'
 import Redes from './Redes'
+import SinAsignar from './SinAsignar'
 import ConfigRedes from './ConfigRedes'
 import ConfigEtiquetas from './Etiquetas'
 import { CONFIG_BASE, normalizarConfig } from './tarifas'
@@ -54,6 +55,7 @@ const CLIENTES = (admin) => [
   ['cli-seguimientos', 'Seguimientos', SeguimientosCrm],
   ['cli-lista', admin ? 'Todos los clientes' : 'Mis clientes', ListaClientes],
   ['cli-redes', 'Facebook e Instagram', Redes],
+  ['cli-sin-asignar', 'WhatsApp sin asignar', SinAsignar],
   ...(admin ? [['cli-panel', 'Panel del equipo', PanelClientes], ['sep', 'Configuración'], ['cli-etiquetas', 'Etiquetas', ConfigEtiquetas], ['cli-whatsapp', 'WhatsApp', ConfigWhatsapp], ['cli-redes-config', 'Redes sociales', ConfigRedes], ['cli-correo', 'Correo', ConfigCorreo]] : []),
 ]
 
